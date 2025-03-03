@@ -288,7 +288,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 		    } catch (IOException e) {
 		      e.printStackTrace();
 		    }			
-
+		    System.exit(0);
 			// alert.showAndWait();
 	    });
 
