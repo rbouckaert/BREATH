@@ -117,6 +117,18 @@
                 <fileset dir="${beast-source-root}/lib" includes="**/*.jar"/>
             </classpath>
         </javac>
+        <javac 
+            srcdir="${beast-source-root}/test"
+            destdir="${build-beast}"
+            source="${sourceVersion}"
+            target="${targetVersion}"
+            includeantruntime="false"
+            fork="yes">
+            <classpath>
+                <pathelement path="${classpath}"/>
+                <fileset dir="${beast-source-root}/lib" includes="**/*.jar"/>
+            </classpath>
+        </javac>
     </target>
 
     <!-- Compile -->
