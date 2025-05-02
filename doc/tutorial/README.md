@@ -14,7 +14,7 @@ Since it is routine these days to sequence pathogens in serious outbreaks, it be
 The BREATH model {% cite Colijn et al. 2024 %} allows simultaneous inference of the phylogeny of the pathogen and transmission amongst hosts, including unsampled hosts.
 This has a number of benefits over existing methods for inference who-infected-who:
 
-* It captures phylogenetic uncertainty impacting tranmission chains more accurately than when a phylogeny is inferred first, and then transmissions are inferred on a summary tree.
+* It captures phylogenetic uncertainty impacting transmission chains more accurately than when a phylogeny is inferred first, and then transmissions are inferred on a summary tree.
 * It provides a tree generating process that we can use as tree prior, thus more accurately describing our prior knowledge about how the phylogeny evolved than if we are using standard coalescent or birth-death based tree priors.
 * It can deal with hosts that were not sampled but are part of the transmission chain.
 * The analysis can be set up in BEAUti, the graphical user interface for BEAST.
@@ -70,7 +70,7 @@ A dialog is shown where you can select a file containing a tree in NEXUS format.
 	<a id="fig:BEAUti1"></a>
 	<img style="width:30%;" src="figures/BEAUti-import.png" alt="">
 	<img style="width:65%;" src="figures/BEAUti-partitions.png" alt="">
-	<figcaption>Figure: Add partition through the `File => Import Imprt` menu.</figcaption>
+	<figcaption>Figure: Add partition through the `File => Import Alignment` menu.</figcaption>
 </figure>
 
 In the partition panel, a new partition will be added with the name roetzer40. 
@@ -109,8 +109,8 @@ Next, we set up the BREATH tree prior.
 
 > * Click the `Priors` panel.
 > * Change the default Yule Model for tree prior to `BREATH`.
-> * New priors appear for the block-count, block-start and end, transmission tree origin
-and population size. 
+> * New priors appear for the block count, block start, block end, transmission tree origin,
+and transmission tree population size.
 > * Set the start value for origin to 10: click the `Initial` button for the `transmissionOrigin.t:roetzer40` parameter, and change the `value` entry from 10000 to 10, then click the `OK` button.
 > * Set the lower bound for population size to 0.1.
 > * Click on the triangle next to `Tree.t:roetzer40` to show the parameter so the `BREATH` tree likelihood.
@@ -143,7 +143,7 @@ The BREATH tree likelihood has the following components:
 The two hazard functions probably need a bit of thought and knowledge to inform their parameters. For more details, we refer to the paper.
 
 
-### Some considerations fro setting up these parameters
+### Some considerations for setting up these parameters
 
 In general, you need to have good information about the sampling process and transmission process in order for BREATH to be useful.
 
@@ -165,16 +165,28 @@ Changing `samplingConstant` will not make much difference to transmission or the
 
 ### Hyperpriors
 
-The BREATH tree prior comes with four hyperpriors: block start, end and count and tranmission population size
+The BREATH tree prior comes with four hyperpriors: block start, block end, block count and 
+transmission population size.
 
-* block start and end represent fractions on a branch, so should be in the interval from zero to 1 (and the associated parameters are bounded by these values). Be default, a uniform(0,1) prior is used. Unless you have good reasons to change, this can be left as is.
-* block counts represent how many infections take place in a block. 
-	* A value of -1 indicates there is not transmission on the branch
-	* A value of 0 indicates there is 1 transmission on the branch, block start and end have the same value and determine where on the branch the transmission takes place.
-	* A value of 1 or more indicates 1 or more transmissions happen in a block, one at block end and one at block start, so they block start and end differ for these branches.
-	So, values below -1 do not make sense, and values over 4 indicate 5 transmission happen on a branch. Note that this many transmissions only tend to happen when there are very long branches in the tree, and suggest a sampling probability of hosts being on the low side of where the transmission tree model makes sense.
-	The default prior is uniform in the range -1 to 4.
-* A constant size population is assumed for the coalescent process inside each host. Together with the sampling and transmission hazard they determine the length of branches, so be aware the population size prior and parameters of the hazard functions interact with each other.
+* block start and block end represent fractions on a branch, so should be in the interval from zero 
+  to 1 (and the associated parameters are bounded by these values). Be default, a uniform(0,1) 
+  prior is used. Unless you have good reasons to change it, this can be left as is.
+* block counts represent how many infections take place in a block:
+	* A value of -1 indicates that there is no transmission on the branch
+	* A value of 0 indicates that there is exactly 1 transmission on the branch, block start and 
+	  block end have the same value and determine where on the branch the transmission takes place.
+    * A value of 1 or more indicates that one or multiple transmissions occur within a block 
+	  (unsampled host) -- one at the block start and one at the block end -- which means the 
+	  block's start and end points differ for these branches.
+	> Values below -1 are not meaningful, and values above 4 indicate that five or more 
+  > transmissions occur along a single branch. Such high values typically arise in cases where 
+  > branches are very long, and they may suggest that the host sampling probability is too low 
+  > for the transmission tree model to remain valid.
+  > 
+  > By default, the prior is assumed to be uniform in the range **-1 to 4**.
+* A constant size population is assumed for the coalescent process inside each host. Together 
+  with the sampling and transmission hazard they determine the length of branches, so be aware 
+  that the population size prior and parameters of the hazard functions interact with each other.
 The prior on the population size is uniform [0, +Infinity) by default. If you observe a collapse of the tree during the MCMC coinciding with a collapsing value of the population size it may be worth increasing the value of the lower bound. For estimating marginal likelihoods through nested or path sampling, make sure to specify a reasonable upper bound in order to make the prior propper.
 * A uniform prior is assumed for the origin of the tree, that is, the place where the host at the root of the tree got infected. The default is set to uniform [0, +Infinity). If you have any information about the age of the outbreak it makes sense to specify the upper bound and make this a proper prior.
 
@@ -183,7 +195,7 @@ Since we don't want the analysis to take too long, we only run for 5 million sam
 
 > * In the MCMC panel, set the chainLength to 5 million samples.
 > * Optionally, you might want to reduce the log frequency of the screen logger to 100000 and that for the trace and tree logger to 2000.
-> * Safe the file to `roetzer.xml`
+> * Save the file to `roetzer.xml`
 
 <figure>
 	<a id="fig:BEAUti6"></a>
@@ -196,7 +208,8 @@ Since we don't want the analysis to take too long, we only run for 5 million sam
 > Run BEAST on `roetzer.xml`
 
 This should not take more than 5 minutes, but if you don't want to wait that long you can use the data in the `precooked_runs` directory that comes with this tutorial.
-The longer runs (marked with `long` in their name) are 
+The longer runs (marked with `_long` in their name) are from an analysis that was run for 20 
+million samples (chainLength).
 
 ## Check convergence
 
@@ -221,10 +234,10 @@ Inspect the tree file, for example in DensiTree. It shows that there is a lot of
 
 ## Visualising Who-Infected-Who
 
-The `WIWVisualiser` app creates an SVG files that visualises who-infected-who. 
+The `WIWVisualiser` app creates an SVG file that visualises who-infected-who. 
 To start the `WIWVisualiser` app, 
 
-> * Select the `File =>> Launch apps` menu in BEAUti.
+> * Select the `File => Launch apps` menu in BEAUti.
 > * Select `WIWVisualiser` from the list of apps, and click the `Launch` button.
 > * In the menu that pops up, select the tree file (or select `roetzer-roetzer40.trees` from the pre-cooked runs)
 > * Select an appropriate output file name
@@ -268,7 +281,7 @@ WIWVisualiser has the following options:
 * prefix (String): prefix of infectorOf entry, e.g., infectorOf (optional, default: infectorOf)
 * threshold (Double): probability threshold below which edges will be ignored. (optional, default: 0.1)
 * partition (String): name of the partition appended to `blockcount, blockend and blockstart` (optional)
-* suppressSingleton (Boolean): do not show taxa that are not connected to any otehr taxa (optional, default: true)
+* suppressSingleton (Boolean): do not show taxa that are not connected to any other taxa (optional, default: true)
 * colourByAge (Boolean): colour nodes in output by node age. All blacks if false (default true)
 * widthByPosterior  (Boolean), draw line between nodes with widths proportional to posterior support (default true)
 * saturation (Float): saturation used when colouring nodes. (optional, default: 0.7)
@@ -277,12 +290,14 @@ WIWVisualiser has the following options:
 
 ## Transmission Tree Statistics
 
-The `TransmissionTreeStats` app provide statistics of set of transmission trees. It has the following options:
+The `TransmissionTreeStats` app provides statistics for a set of transmission trees.
+It has the following options:
 
 * trees (TreeFile): tree file file with transmission trees. (optional, default: [[none]])
 * burnin (Integer): percentage of trees to used as burn-in (and will be ignored). NB default 0 (optional, default: 0)
 * partition (String): name of the partition appended to `blockcount, blockend and blockstart` (optional)
-* out (String): directory where to put files with tranmsision & sampling time stats (optional, default: /tmp)
+* out (String): directory where to put files with transmission & sampling time stats (optional, 
+  default: /tmp)
 
 This is a sample output of `TransmissionTreeStats`:
 ```
@@ -308,7 +323,7 @@ It can be revealing in that for some hosts the distribution is multi-modal.
 The `timeTillTransmission.dat` file contains information about the time it takes between the first infection of a host and the time the host infects another host. 
 It also records the time till infects a second host.
 If no host(s) are infected, -1 is output -- this shows up when you open the file in Tracer as a peak around -1.
-Checking the time-till-first-tranmission and time-till-second-transmission can be useful in verifying the transmission hazard is properly parameterised.
+Checking the time-till-first-transmission and time-till-second-transmission can be useful in verifying the transmission hazard is properly parameterised.
 
 
 
