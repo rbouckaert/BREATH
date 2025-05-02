@@ -1,7 +1,10 @@
+BREATH.iml
+
 /beast-source/
 /build-beast/
 /test/
 /build/
+dist/
 .classpath
 .project
 
