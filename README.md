@@ -28,9 +28,9 @@ Unzip the file [BREATH.v0.0.1.zip](https://github.com/rbouckaert/transmission/re
 ## Build from code
 
 An alternative way to install is to build from the source code. 
-Frist, get code for beast2, BeastFX and this repository. Then run
+First, get code for beast2, BeastFX and this repository. Then run
 
-```
+```bash
 ant install
 ```
 
