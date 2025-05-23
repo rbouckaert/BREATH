@@ -257,7 +257,7 @@
 
         <echo/>
         <echo/>
-        <echo>** Package ${dist}/${fullName}.zip created successfuly! **</echo>
+        <echo>** Package ${dist}/${fullName}.zip created successfully! **</echo>
     </target>
 
 
