@@ -217,8 +217,8 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		int suppressedCount = 0;
 		for (int i = 0; i < n; i++) {
 			if (nodesInUse[i] || !suppressSingletonInput.get()) {
-				String colourString = "#000";
-				Node node = null;
+				String colourString;
+				Node node;
 				if (age != null) {
 					int c = java.awt.Color.HSBtoRGB((float)(age[i]/upper), saturationInput.get(), brightnessInput.get());
 					colourString = "#" + Integer.toHexString(c).substring(2);
@@ -243,21 +243,26 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 				suppressedCount++;
 			}
 		}
-		
+
 		if (suppressSingletonInput.get()) {
-			Log.warning(suppressedCount + " nodes not shown since they are singletons");
+			if (suppressedCount > 0) {
+				Log.warning( "[Info] " + suppressedCount + " " + (suppressedCount == 1 ? "node" : "nodes") +
+						" not shown due to being " + (suppressedCount == 1 ? "a singleton" : "singletons") + ".");
+			}
 			if (suppressedCount == n) {
-				Log.warning("\nSince all nodes have been removed, no who-infected-who network will be created.");
-				Log.warning("\nTo remedy this:\n"
-						+ "o Make sure the partition name is correct.\n"
-						+ "o Try reducing the threshold value.\n");
-				Log.warning("o Check the parameters of the hazard functions to see whether they scale well with the size of the tree");
+				Log.warning(
+						       "[Warning] No who-infected-who network will be created - all nodes have been removed.\n"
+								+ "          Possible remedies:\n"
+								+ "            o Ensure the partition name is correct.\n"
+								+ "            o Try reducing the threshold value.\n"
+								+ "            o Check if the hazard function parameters scale well with the tree size.\n"
+				);
 				return;
 			}
 		}
-		
+
 		// add edges
-		double pen = 1.0;
+		double pen;
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
 				if (i!=j && transitions[i][j] >= threshold) {
@@ -293,7 +298,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		// output graph
 		try {
 			File svgFile = outputInput.get();
-			Log.warning("Writing to file " + svgFile.getPath());
+			Log.warning("Writing network to file: " + svgFile.getPath());
 			FileWriter outfile = new FileWriter(svgFile);
 			outfile.write(svg);
 			outfile.close();
@@ -302,12 +307,14 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		}
 		
 		if (colourByAgeInput.get()) {
-			System.err.println("Writing legend " + outputInput.get().getParent() + DIR_SEPARATOR + "legend.png ");
+			String parent = outputInput.get().getParent();
+			String legendPath = (parent != null ? parent + DIR_SEPARATOR : "") + "legend.png";
+			Log.warning("Writing legend to file: " + legendPath);
+
 			BufferedImage image = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
 	        Graphics g = image.getGraphics();
 	        g.setColor(java.awt.Color.white);
 	        g.fillRect(0, 0, 200, 200);
-	        
 	        for (int i = 0; i < 200; i++) {
 	        	double x = (200 - i) / 200.0;
 				g.setColor(java.awt.Color.getHSBColor((float) x, saturationInput.get(), brightnessInput.get()));
@@ -317,16 +324,11 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 	        for (int i = 0; i < 10; i++) {
 	        	g.drawString(f.format(upper * (10 - i)/ 10), 100, 200*i/10);
 	        }
-			ImageIO.write(image, "png", new File((outputInput.get().getParent() != null ? outputInput.get().getParent() + DIR_SEPARATOR : "") + "legend.png"));
-			
+			ImageIO.write(image, "png", new File(legendPath));
 		}
-		
-		
 		outputMatrix(nodeLabels, transitions);
-		
-		System.err.println("Done");	
 	}
-	
+
 	/*
 	 * output transition matrix to tab separated file
 	 */
@@ -351,7 +353,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 					labels.add(Integer.valueOf(label));
 				}
 				HeapSort.sort(labels, order);
-				
+
 			} else {
 				List<String> labels = new ArrayList<>();
 				for (String label : nodeLabels) {
@@ -359,7 +361,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 				}
 				HeapSort.sort(labels, order);
 			}
-			
+
 			PrintStream out = new PrintStream(matrixOutputInput.get());
 			out.print("\t");
 			for (int i = 0; i < nodeLabels.length; i++) {
@@ -373,7 +375,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 				}
 				out.println();
 			}
-			
+
 			out.close();
 		}
 	}
