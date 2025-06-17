@@ -76,7 +76,7 @@ public class InfectionMover extends Operator {
 			}
 		}
 
-		// 2. pick one uniformly at random from eligble nodes
+		// 2. pick one uniformly at random from eligible nodes
 		int k = Randomizer.nextInt(eligbleInfectionCount);
 		Node nodeWithInfectionRemoved = removeInfectionFromPath(path, k);
 		

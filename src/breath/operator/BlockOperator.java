@@ -99,6 +99,8 @@ public class BlockOperator extends Operator {
 		
 		
 		if (Randomizer.nextBoolean()) {
+			// move block boundaries for a branch that has a non-empty block
+			
 			int i = Randomizer.nextInt(blockStartFraction.getDimension());
 
 			int attempts = 0;
@@ -131,6 +133,10 @@ public class BlockOperator extends Operator {
 		}
 		
 		if (keepConstantCountInput.get()) {
+			// NB By deafult keepConstantCount == false, so should not get here
+			// but if it does 
+			// remove one infection safely (so that colouring is still valid) 
+			// then add one infection
 			int pre = blockCount.getValue(0);
 
 			int [] i = chooseInfectionToRemove();
@@ -149,12 +155,23 @@ public class BlockOperator extends Operator {
 			
 			return 0*logHR;
 		} else	if (Randomizer.nextBoolean()) {
+			// remove one infection
+			
+			// first, find an infection to remove
+			// possibly, no infection can be removed safely 
+			// (i.e. such that the remaining colouring is valid)
 			int [] i = chooseInfectionToRemove();
 			if (i == null) {
 				return Double.NEGATIVE_INFINITY;
 			}
+			
+			// found a good candidate, so remove it
 			return removeInfection(i);
 		} else {
+			// add one infection
+			
+			// it is always possible to add infections, so no special 
+			// case here (unlike when removing infections)
 			int k = chooseBlockToInsert();
 			return insertInfection(k);
 		}
@@ -190,33 +207,49 @@ public class BlockOperator extends Operator {
 	
 	
 	private int [] calcEligbleInfectionCount() {
+		// colour the tree based on current infections
 		int [] colourAtBase = new int[tree.getNodeCount()];
 		int n = tree.getLeafNodeCount();
 		ColourProvider.getColour(tree.getRoot(), blockCount, n, colourAtBase);
 		
+		// go through the whole tree, and for each branch
+		// check if removing the infection results in a valid colouring
+		// If so, add to eligbleInfectionCount
 		eligbleInfectionCount = 0;
 		for (int i = 0; i < blockCount.getDimension(); i++) {
 			if (blockCount.getValue(i) == 0) {
+				// one infection on this branch, that if removed, can lead to invalid colouring
+				// 1. colour at base = a sampled host colour (if < n), and
+				// 2. colour at parent = another sampled host colour (if < n)
 				if (!(colourAtBase[i] < n && !tree.getNode(i).isRoot() && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
+					// otherwise, it can be removed, and the infection can be added to eligbleInfectionCount
 					eligbleInfectionCount += 1;
 				}
 			} else if (blockCount.getValue(i) > 0) {
+				// more than one infection on this branch, so we can safely remove 
+				// start or end infection of the block: i.e. two possibilities
 				eligbleInfectionCount += 2;
-//			} else {
-//				eligbleInfectionCount += blockCount.getValue(i) + 1;
+			//} else {
+				// cannot remove infection and leave a valid colouring
+				// so leave eligbleInfectionCount unchanged
 			}
 		}
 		return colourAtBase;
 	}
 	
 	private int[] chooseInfectionToRemove() {
+		// choose infection to be removed such that the remaining infections still leave a valid infection history 
+		// (i.e. there is no path between any pair of leaves that does not contain an infection)
 		int [] colourAtBase = calcEligbleInfectionCount();
 		int n = tree.getLeafNodeCount();
 		if (eligbleInfectionCount == 0) {
 			return null;
 		}
 		
+		// randomly pick one of the eligible infections to remove
 		int k = Randomizer.nextInt(eligbleInfectionCount);
+		
+		// loop through the eligible infections, till we find the k-th one
 		for (int i = 0; i < blockCount.getDimension(); i++) {
 			if (blockCount.getValue(i) == 0) {
 				if (!(colourAtBase[i] < n && !tree.getNode(i).isRoot() && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
@@ -226,6 +259,7 @@ public class BlockOperator extends Operator {
 				k -= 2;
 			}
 			if (k < 0) {
+				// found the branch containing the eligble infection
 				return new int[] {i, k};
 			}
 		}
@@ -233,17 +267,18 @@ public class BlockOperator extends Operator {
 	}
 	
 	private int chooseBlockToInsert() {
-//		{
-//			int i = Randomizer.nextInt(tree.getNodeCount()-1);
-//			if (true) return i;
-//		}
+		// choose random location on branch proportional to lengths of branches
 		
-		
+		// first calculate length of tree
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
 		}
+		
+		// random point on length
 		double r = Randomizer.nextDouble() * length;
+		
+		// find the node associated with r
 		int i = 0;
 		while (r > 0) {
 			Node node = tree.getNode(i);
@@ -256,9 +291,15 @@ public class BlockOperator extends Operator {
 		throw new RuntimeException("Programmer error: should not get here");
 	}
 
+	
+	/** insert infection on branch i **/
 	private double insertInfection(int i) {
+		
 		switch (blockCount.getValue(i)) {
 		case -1:
+			// add infection on branch without any infection
+			// a random location on the branch must be chosen to put it
+			// start and end of block must be equal
 			blockCount.setValue(i, 0);
 			double f = Randomizer.nextDouble();
 			blockStartFraction.setValue(i, f);
@@ -266,7 +307,9 @@ public class BlockOperator extends Operator {
 			break;
 			
 		case 0:
-			// add infection
+			// add infection to branch already containing an infection
+			// since block start == block end, we need to choose new values for
+			// start and end
 			blockCount.setValue(i, 1);
 			
 			double blockStart = Randomizer.nextDouble();
@@ -279,20 +322,25 @@ public class BlockOperator extends Operator {
 			break;
 		
 		default:
-			// add infection
+			// add infection to block already containing 2 infections
+			// assume it goes inside the block, so no need to update block boundaries
 			blockCount.setValue(i, blockCount.getValue(i)+1);
 			
 		}
-	
+
+		// calculate the number of infections that can be removed safely
+		// after we added this infection
 		calcEligbleInfectionCount();
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
 		}
+		//              probability this infection got selected for removal
+		// HR = ----------------------------------------------------------------------------
+		//      probability density the infection gets inserted at this branch at this point
+		// return log(HR)		
 		return Math.log(1.0/eligbleInfectionCount)
-			   - Math.log(tree.getNode(i).getLength() / length)
-				;
-		
+			   - Math.log(tree.getNode(i).getLength() / length);
 	} // insertInfection
 
 	private double removeInfection(int [] infection) {
@@ -303,32 +351,45 @@ public class BlockOperator extends Operator {
 			return 0; 
 			
 		case 0:
-			// remove infection
+			// remove infection: no infections left
 			blockCount.setValue(i, -1);
 			break;
 			
 		case 1:
-			// remove infection
+			// remove infection: 1 infection left, so block start and end time becomes the same
 			blockCount.setValue(i, 0);
 			if (Randomizer.nextBoolean()) {
 				blockStartFraction.setValue(i, blockEndFraction.getValue(i));
 			} else {
 				blockEndFraction.setValue(i, blockStartFraction.getValue(i));
 			}
+			// potentially, this should draw a new random value
+			// for block start == block end to be symmetric with
+			// adding an infection, like so:
+//			double blockStart = Randomizer.nextDouble();
+//			blockStartFraction.setValue(i, blockStart);
+//			blockEndFraction.setValue(i, blockStart);					
+
 			break;
 		default:
-			// remove infection
+			// remove infection and 2 or more infections left
+			// assume we remove one inside the block, so no change to boundaries
 			blockCount.setValue(i, blockCount.getValue(i)-1);
 		}
 		
 		
+		// calculate length of tree
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
 		}
+		
+		//      probability density the infection gets inserted at this branch at this point
+		// HR = ----------------------------------------------------------------------------
+		//              probability this infection got selected for removal
+		// return log(HR)		
 		return Math.log(tree.getNode(i).getLength() / length) 
-				- Math.log(1.0/eligbleInfectionCount) 
-				;
+				- Math.log(1.0/eligbleInfectionCount);
 	} // removeInfection
 
 
