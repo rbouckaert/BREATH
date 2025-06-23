@@ -116,7 +116,7 @@ public class BlockOperator extends Operator {
 				break;
 			case 0:
 				// make sure start == end fraction after proposal
-				double f = lowerStart + Randomizer.nextDouble() * (upperStart - upperEnd);
+				double f = lowerStart + Randomizer.nextDouble() * (upperEnd - lowerStart);
 				blockStartFraction.setValue(i, f);
 				blockEndFraction.setValue(i, f);
 				break;
