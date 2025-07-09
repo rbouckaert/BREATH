@@ -6,13 +6,13 @@
 <!--
  	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='((human:1,robot):1,(chimp:1,bonobo:1):1)'/>
  	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='(human:0.02096625515232275,(chimp:0.014857143159686462,bonobo:0.014857143159686462):0.0061091119926362895)'/>
- 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='((((human:0.02096625515232275,(chimp:0.014857143159686462,bonobo:0.014857143159686462):0.0061091119926362895):0.012862878672687175,gorilla:0.033829133825009926):0.029471223948245952,orangutan:0.06330035777325588):0.0031773962188650223,siamang:0.0664777539921209)'/>
+ 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' adjustTipHeights="false" newick='(((chimp:0.1,bonobo:0.1):0.05,gorilla:0.05):0.05,urangutan:0.05)'/>
 -->
- 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' adjustTipHeights="false" newick='(chimp:0.1,bonobo:0.1)'/>
+ 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='((((human:0.02096625515232275,(chimp:0.014857143159686462,bonobo:0.014857143159686462):0.0061091119926362895):0.012862878672687175,gorilla:0.033829133825009926):0.029471223948245952,orangutan:0.06330035777325588):0.0031773962188650223,siamang:0.0664777539921209)'/>
 
 
 
-    <run id="mcmc" spec="MCMC" chainLength="10000000">
+    <run id="mcmc" spec="MCMC" chainLength="100000000">
         <state id="state" spec="State" storeEvery="5000">
 			<!-- estimated transmission parameters -->
             <stateNode idref="blockstart.t:dna"/>
@@ -30,6 +30,7 @@
 		            <populationModel id="ConstantTransmissionPopulation.t:dna" spec="ConstantPopulation">
         		        <parameter id="transmissionPopSize.t:dna" spec="parameter.RealParameter" name="popSize">1.0</parameter>
 		            </populationModel>
+		            <origin spec="parameter.RealParameter" value="0.25"/>
 		            <endTime  id="endTime.t:dna" spec="parameter.RealParameter" value="0"/>
 		            <samplingHazard id="samplingHazard.t:dna" spec="breath.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.0"/>
 		            <transmissionHazard id="transmissionHazard.t:dna" spec="breath.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.5"/>
