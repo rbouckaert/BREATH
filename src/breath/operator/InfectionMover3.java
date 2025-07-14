@@ -107,7 +107,7 @@ public class InfectionMover3 extends Operator {
 		int numBranchesWithInfections2 =  (nodeHasInfections2 ? 1 : 0) + 
 				(leftHasInfections2 ? 1 : 0) + 
 				(rightHasInfections2 ? 1 : 0);
-		logHR = Math.log(numBranchesWithInfections2) - Math.log(numBranchesWithInfections);
+		logHR = Math.log(numBranchesWithInfections) - Math.log(numBranchesWithInfections2);
 
 		return logHR;
 	}
