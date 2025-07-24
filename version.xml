@@ -21,6 +21,8 @@
         <provider classname="breath.util.InfectorOfLogger"/>
         <provider classname="breath.util.OriginCalculator"/>
 
+        <provider classname="breath.evolution.LinearGrowth"/>
+
 <!--
         <provider classname="transmission2.TransmissionTreeLikelihood"/>
         <provider classname="transmission2.TransmissionSet"/>
