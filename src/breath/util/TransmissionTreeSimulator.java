@@ -24,6 +24,7 @@ import beast.base.core.Log;
 import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.TreeParser;
 import beast.base.evolution.tree.coalescent.ConstantPopulation;
+import beast.base.evolution.tree.coalescent.ExponentialGrowth;
 import beast.base.evolution.tree.coalescent.PopulationFunction;
 import beast.base.evolution.tree.coalescent.PopulationFunction.Abstract;
 import beast.base.inference.Runnable;
@@ -45,8 +46,9 @@ public class TransmissionTreeSimulator extends Runnable {
 	final public Input<Function> endTimeInput = new Input<>("endTime", "end time of the study", new Constant("1.0"));
 	final public Input<Function> popSizeInput = new Input<>("popSize",
 			"population size governing the coalescent process", new Constant("0.1"));
-	final public Input<Function> linearGrowthRateInput = new Input<>("linearGrowthRate",
-			"if specified, the popSize is ignored and a linear growth rate is assumed "
+	final public Input<Function> growthRateInput = new Input<>("growthRate",
+			"if specified, and popSize is specified, exponential growth is used."
+			+ "if popSize is not specified a linear growth rate is assumed "
 			+ "to govern the coalescent process");
 
 	final public Input<Function> sampleShapeInput = new Input<>("sampleShape",
@@ -115,7 +117,8 @@ public class TransmissionTreeSimulator extends Runnable {
     	}
     	traceout.println("endTime\tTree.height\tTree.treeLength\torigin\tlogP" + (calcLogPInput.get()? "\tlogP2" : ""));
 		
-    	
+Log.warning(sampleConstantInput.get().getArrayValue() + "");    	
+Log.warning(transmissionConstantInput.get().getArrayValue() + "");    	
     	Map<Integer, Integer> taxonCounts = new HashMap<>();
     	Map<Integer, Integer> infectionCounts = new HashMap<>();
 		
@@ -295,9 +298,13 @@ public class TransmissionTreeSimulator extends Runnable {
 
 	private Abstract getPopFun() {
 		Abstract popFun;
-		if (linearGrowthRateInput.get() != null) {
+		if (growthRateInput.get() != null && popSizeInput.get() != null) {
+			popFun = new ExponentialGrowth();
+			popFun.initByName("popSize", popSizeInput.get().getArrayValue() + "",
+					"growthRate", growthRateInput.get().getArrayValue() + "");
+		} else if (growthRateInput.get() != null) {
 			popFun = new LinearGrowth();
-			popFun.initByName("rate", linearGrowthRateInput.get().getArrayValue() + "");
+			popFun.initByName("rate", growthRateInput.get().getArrayValue() + "");
 		} else {
 			popFun = new ConstantPopulation();
 			popFun.initByName("popSize", popSizeInput.get().getArrayValue() + "");
@@ -762,7 +769,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				// getActiveNodeCount(), currentHeight);
 				r = Randomizer.nextDouble();
 				nextCoalescentHeight = currentHeight
-						+ ( demographic instanceof LinearGrowth ?
+						+ (demographic instanceof LinearGrowth ?
 //							+ (1.0/lambda)*(Math.pow(1-r, lambda/(activeNodeCount * (activeNodeCount-1)/2))) * lambda * (maxHeight - currentHeight);
 							+ (Math.pow(1-r, lambda/(activeNodeCount * (activeNodeCount-1)/2))) * (maxHeight - currentHeight)
 						: PopulationFunction.Utils.getSimulatedInterval(demographic, activeNodeCount, currentHeight));
