@@ -63,6 +63,9 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
     	for (int i = 0; i < n; i++) {
     		out.print("blockend."+tree.getNode(i).getID() + "\t");
     	}
+    	for (int i = 0; i < n; i++) {
+    		out.print("infectionTime."+tree.getNode(i).getID() + "\t");
+    	}
     	out.print("infectionCount\t");
     	out.println();
 
@@ -70,6 +73,7 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         trees.reset();
         int k = 0;
         boolean directOnly = directOnlyInput.get();
+        boolean warnedBefore = false, warnedAboutPartitionSettting = false;
         while (trees.hasNext()) {
         	tree = trees.next();
         	
@@ -77,6 +81,7 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         	Double [] start = new Double[n*2-1];
         	Double [] end = new Double[n*2-1];
         	Integer [] count = new Integer[n*2-1];
+        	int noMatchCount = 0;
         	for (int i = 0; i < tree.getNodeCount(); i++) {
         		Node node = tree.getNode(i);
         		Object o = node.getMetaData("start");
@@ -87,6 +92,7 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         			o = node.getMetaData("blockstart.t:" + partitionInput.get());
         		}
         		if (o == null) {
+        			noMatchCount++;
         			o = 0.5;
         		}
         		start[i] = (Double) o;
@@ -99,6 +105,7 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         			o = node.getMetaData("blockend.t:" + partitionInput.get());
         		}
         		if (o == null) {
+        			noMatchCount++;
         			o = 0.5;
         		}
         		end[i] = (Double) o;
@@ -107,7 +114,16 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         		if (o == null) {
         			o = node.getMetaData("blockcount.t:" + partitionInput.get());
         		}
+        		if (o == null) {
+        			noMatchCount++;        			
+        		}
         		count[i] = o == null ? 0 : (int)(double) o;
+        	}
+        	if (noMatchCount > tree.getNodeCount()) {
+        		if (!warnedAboutPartitionSettting) {
+        			Log.warning("WARNING: not much metadata matched: did you specify the 'partition'?");
+        			warnedAboutPartitionSettting = true;
+        		}
         	}
             RealParameter blockStartFraction = new RealParameter(start);
             RealParameter blockEndFraction = new RealParameter(end);
@@ -130,6 +146,24 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         			}
         		}
         	}
+        	double [] infectionTime = new double[tree.getLeafNodeCount()];
+        	for (int i = 0; i < tree.getLeafNodeCount(); i++) {
+        		Node node = tree.getNode(i);
+        		while (!node.isRoot() && count[node.getNr()] < 0) {
+        			node = node.getParent();
+        		}
+        		if (count[node.getNr()] >=0) {
+        			infectionTime[i] = node.getHeight() + node.getLength() * start[node.getNr()];
+        		} else if (node.isRoot()) {
+        			infectionTime[i] = node.getHeight();
+        		} else {
+        			if (!warnedBefore) {
+        				Log.warning("WARNING: Could not calculate infection time -- this may not be the right format for a transmission tree.");
+        				warnedBefore = true;
+        			}
+        		}
+        		
+        	}
         	
         	// log the result
         	out.print(k + "\t");
@@ -144,6 +178,9 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         	}
         	for (int i = 0; i < n; i++) {
         		out.print(blockEndFraction.getValue(i) + "\t");
+        	}
+        	for (int i = 0; i < n; i++) {
+        		out.print(infectionTime[i] + "\t");
         	}
         	int infectionCount = 0;
         	for (int i = 0; i < 2*n-2; i++) {
@@ -184,6 +221,9 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
     	}
     	for (int i = 0; i < n; i++) {
     		outtype.print("blockend."+tree.getNode(i).getID() + "\td\n");
+    	}
+    	for (int i = 0; i < n; i++) {
+    		outtype.print("infectionTime."+tree.getNode(i).getID() + "\td\n");
     	}
 		outtype.print("infectionCount\td\n");
 		if (outputTypeInput.get() != null && !outputTypeInput.get().getName().equals("[[none]]")) {
