@@ -1,7 +1,6 @@
 package breath.evolution;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import beast.base.core.BEASTInterface;
@@ -10,7 +9,6 @@ import beast.base.core.Function;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.evolution.tree.coalescent.PopulationFunction;
-import beast.base.inference.parameter.RealParameter;
 
 
 /**
@@ -26,6 +24,12 @@ public class LinearGrowth extends PopulationFunction.Abstract {
     //
     // Public stuff
     //
+
+    @Override
+    public void initAndValidate() {
+    	super.initAndValidate();
+    	rate  = getRate();
+    }
 
     /**
      * @return initial population size.
@@ -60,6 +64,7 @@ public class LinearGrowth extends PopulationFunction.Abstract {
         if(t>0){
             throw new IllegalArgumentException("All timings should be negative");
         }
+        rate = rateParameter.get().getArrayValue();
         return(-t*rate);
 
     }
@@ -73,7 +78,14 @@ public class LinearGrowth extends PopulationFunction.Abstract {
     public double getInverseIntensity(double x) {
         throw new RuntimeException("Not implemented yet");
     }
-
+    
+    /**
+     * Calculates the integral 1/N(t) dt between start and finish.
+     */
+    @Override
+	public double getIntegral(double start, double finish) {
+		return /*1/getN0() * */ Math.log(start/finish);
+	}
 
 
     private double rate = 1.0;
