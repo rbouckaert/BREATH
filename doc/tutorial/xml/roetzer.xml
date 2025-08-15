@@ -66,8 +66,8 @@ name="alignment">
 
     <map name="OneOnX" >beast.base.inference.distribution.OneOnX</map>
 
-    <run id="mcmc" spec="MCMC" chainLength="5000000">
-        <state id="state" spec="State" storeEvery="5000">
+    <run id="mcmc" spec="MCMC" chainLength="25000000">
+        <state id="state" spec="State" storeEvery="25000">
             <tree id="Tree.t:roetzer40" spec="beast.base.evolution.tree.Tree" name="stateNode">
                 <trait id="dateTrait.t:roetzer40" spec="beast.base.evolution.tree.TraitSet" dateFormat="yyyy-M-dd" traitname="date" value="2:2007-11-01=2007-11-01,4:2007-04-01=2007-04-01,5:2008-07-01=2008-07-01,45:2004-10-01=2004-10-01,47:2005-09-01=2005-09-01,48:2008-04-01=2008-04-01,49:2008-01-01=2008-01-01,50:2008-03-01=2008-03-01,51:2008-06-01=2008-06-01,52:2008-08-01=2008-08-01,53:2008-09-01=2008-09-01,54:2009-02-01=2009-02-01,55:2009-03-01=2009-03-01,57:2009-08-01=2009-08-01,60:2006-11-01=2006-11-01,62:2006-06-01=2006-06-01,63:2006-07-01=2006-07-01,64:2006-10-01=2006-10-01,65:2006-11-01=2006-11-01,66:2007-02-01=2007-02-01,67:2007-05-01=2007-05-01,68:2007-01-01=2007-01-01,69:2008-09-01=2008-09-01,70:2009-05-01=2009-05-01,71:2010-04-01=2010-04-01,72:2010-01-01=2010-01-01,73:2009-05-01=2009-05-01,74:2010-01-01=2010-01-01,75:2006-03-01=2006-03-01,76:2006-04-01=2006-04-01,77:2009-02-01=2009-02-01,78:2007-10-01=2007-10-01,79:2010-05-01=2010-05-01,80:2010-06-01=2010-06-01,81:2010-07-01=2010-07-01,82:2010-08-01=2010-08-01,83:2010-06-01=2010-06-01,84:2010-10-01=2010-10-01,85:2010-11-01=2010-11-01,86:2010-02-01=2010-02-01">
                     <taxa id="TaxonSet.roetzer40" spec="TaxonSet">
@@ -84,7 +84,7 @@ name="alignment">
             <parameter id="blockstart.t:roetzer40" spec="parameter.RealParameter" dimension="78" lower="0.0" name="stateNode" upper="1.0">0.5</parameter>
             <parameter id="blockend.t:roetzer40" spec="parameter.RealParameter" dimension="78" lower="0.0" name="stateNode" upper="1.0">0.5</parameter>
             <stateNode id="blockcount.t:roetzer40" spec="parameter.IntegerParameter" dimension="79" lower="-1" upper="100000">0</stateNode>
-            <parameter id="transmissionPopSize.t:roetzer40" spec="parameter.RealParameter" lower="0.1" name="stateNode" upper="Infinity">0.5</parameter>
+            <parameter id="transmissionPopSize.t:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="Infinity">0.5</parameter>
             <parameter id="transmissionOrigin.t:roetzer40" spec="parameter.RealParameter" name="stateNode">10.0</parameter>
         </state>
         <init id="RandomTree.t:roetzer40" spec="RandomTree" estimate="false" initial="@Tree.t:roetzer40" taxa="@roetzer40">
@@ -140,10 +140,12 @@ name="alignment">
                     <Uniform id="Uniform.2" name="distr"/>
                 </prior>
                 <prior id="TransmissionOriginPrior.t:roetzer40" name="distribution" x="@transmissionOrigin.t:roetzer40">
-                    <Uniform id="Uniform.7" lower="0.1" name="distr" upper="Infinity"/>
+                    <Uniform id="Uniform.7" lower="0" name="distr" upper="10"/>
                 </prior>
                 <prior id="TransmissionPopSizePrior.t:roetzer40" name="distribution" x="@transmissionPopSize.t:roetzer40">
-                    <Uniform id="Uniform.6" name="distr" upper="Infinity"/>
+                    <Exponential id="Exponential.1" name="distr">
+                        <parameter id="RealParameter.9" spec="parameter.RealParameter" estimate="false" name="mean">1.0</parameter>
+                    </Exponential>
                 </prior>
             </distribution>
             <distribution id="likelihood" spec="CompoundDistribution" useThreads="true">
@@ -219,7 +221,7 @@ name="alignment">
         <operator id="transmissionInfectionMover.t:roetzer40" spec="breath.operator.InfectionMover" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" likelihood="@transmissionLikelihood.t:roetzer40" weight="50.0"/>
         <operator id="transmissionBlockOperator.t:roetzer40" spec="breath.operator.BlockOperator" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" tree="@Tree.t:roetzer40" weight="50.0"/>
         <operator id="transmissionPopSizeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="5.0"/>
-        <operator id="transmissionOriginScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionOrigin.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="0.5"/>
+        <operator id="transmissionOriginScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionOrigin.t:roetzer40" scaleFactor="0.001" upper="10.0" weight="0.5"/>
         <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="2000" model="@posterior" sanitiseHeaders="true" sort="smart">
             <log idref="posterior"/>
             <log idref="likelihood"/>

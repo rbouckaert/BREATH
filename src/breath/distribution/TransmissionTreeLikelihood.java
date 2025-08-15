@@ -454,9 +454,13 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
             throw new RuntimeException("Not implemented yet");
         }
 
+
+        // As currently written there is one more interval than intervalCount. This was throwing errors when it should
+        // not
+
         @Override
         public double getInterval(int i) {
-            if (i < 0 || i >= intervalCount) throw new IllegalArgumentException();
+            if (i < 0 || i >= intervalCount + 1) throw new IllegalArgumentException();
             return intervals[i];
         }
 
@@ -511,12 +515,14 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
                 lineageCounts = new int[nodeCount];
             }
 
+
             // start is the time of the first tip
             double start = times.get(0);
             int numLines = 0;
             int nodeNo = 0;
             intervalCount = 0;
             while (nodeNo < nodeCount) {
+
 
                 int lineagesRemoved = 0;
                 int lineagesAdded = 0;
@@ -569,6 +575,8 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
                 // coalescent event
                 numLines -= lineagesRemoved;
             }
+
+
         }
 
         public void addEvent(double time, IntervalType type) {
@@ -672,7 +680,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
      */
 
 
-    private double calculateProbabilityOfLineageDecrementOverInterval(double deltaT,
+    private double calculateLogProbabilityOfLineageDecrementOverInterval(double deltaT,
                                                                       int lineagesAtStart, int lineagesAtEnd){
 
         // remember start and end are in reverse time
@@ -711,7 +719,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
                 sum += coalescenceRate * exponentialTerm * productTerm;
             }
 
-            double prefactor = Math.log(2.0) - Math.log(lineagesAtStart) - Math.log(lineagesAtStart - 1);
+            double prefactor = Math.log(2.0) - Math.log(lineagesAtEnd) - Math.log(lineagesAtEnd - 1);
             return prefactor +Math.log(sum);
         }
 
@@ -743,33 +751,37 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
                                         int index, int lineagesAtEnd) {
         Double duration = intervals.get(index);
         Integer samplesAtStart = samples.get(index);
+
+        // The maximum number of lineages at the start happens if every single sample taken prior (backwards) to
+        // the end point coalescences in this interval. The minimum number of lineages at the start happens if the
+        // number of coalescences on the interval is the absolute minimum, which is the maximum of the number of
+        // lineages at the end, and the number of samples at the start, plus one unless this is the first interval
+
         Integer samplesAtOrBeforeStart = samplesAtStart;
+
         for(int i = index + 1; i < samples.size(); i++) {
             samplesAtOrBeforeStart += samples.get(i);
         }
-        int minLineagesAtStart = samplesAtStart;
-        // The first interval can only start with as many lineages as samples taken at that time point. Any other
-        // must have at least one more.
 
-        if(index < samples.size() - 1){
-            minLineagesAtStart++;
+        int unconstrainedMinLineagesAtStart = samplesAtStart;
+        if(index != intervals.size() - 1){
+            unconstrainedMinLineagesAtStart++;
         }
 
-        // The minimum number of lineages extant at the end of the interval is the number of added samples plus one
-        // unless it is the last interval, in which case it is just the number of added samples
-        // The maximum number is the number of lineages added from that point onwards
+        int minimumLineagesAtStart = Math.max(unconstrainedMinLineagesAtStart, lineagesAtEnd);
 
-        double out = 0;
 
-        for(int i = minLineagesAtStart; i <= samplesAtOrBeforeStart; i++) {
-            double temp = calculateProbabilityOfLineageDecrementOverInterval(duration, i, lineagesAtEnd);
+        double prob = 0;
+
+        for(int i = minimumLineagesAtStart; i <= samplesAtOrBeforeStart; i++) {
+            double temp = calculateLogProbabilityOfLineageDecrementOverInterval(duration, i, lineagesAtEnd);
             if(index < samples.size()-1){
                 // the samples added at the start of this interval are not present in the next interval
                 temp += calculateDenominator(intervals, samples, index+1, i-samplesAtStart);
             }
-            out += Math.exp(temp);
+            prob += Math.exp(temp);
         }
-        return Math.log(out);
+        return Math.log(prob);
 
     }
 
@@ -834,6 +846,8 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         // first the denominator
         double t0 = intervals.times.get(0);
         double tmax = intervals.birthTime;
+        // there is an extra interval here for TMRCA to infection
+        int nIntervals = intervals.getIntervalCount();
 
         double denominator=0;
 
@@ -842,16 +856,14 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         // But the denominator algorithm goes in, well, backwards backwards time and those intervals need to be sorted
         // forwards, based on what type of interval starts them!
 
-        if(intervals.getIntervalCount() > 1){
+        if(intervals.events.size() > 1){
             // This better constructed in backwards time and then reversed. We need all the intervals between samples;
             // coalescent events do not count.
 
             ArrayList<Double> interSampleIntervals = new ArrayList<>();
             ArrayList<Integer> lineagesAdded = new ArrayList<>();
-            // this is to group multiple sample events together
-            boolean afterSample = false;
             double currentIntervalLength = 0;
-            for(int i = 0; i < intervals.getIntervalCount(); i++){
+            for(int i = 0; i <= nIntervals -1 ; i++){
                 currentIntervalLength += intervals.getInterval(i);
                 // annoyingly you want the type of interval starting (in reverse time) at the current time point, and
                 // to be coherent there must be an "interval" starting at the last time point
@@ -863,17 +875,17 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
                     intervalType = intervals.getIntervalType(i-1);
                 }
                 if(intervalType == IntervalType.SAMPLE){
-                    if(currentIntervalLength > 0){
-                        interSampleIntervals.add(currentIntervalLength);
-                        currentIntervalLength = 0;
-                        lineagesAdded.add(1);
-                    } else if(afterSample) {
-                        // zero distance between this and the last sample
-                        lineagesAdded.set(lineagesAdded.size()-1, lineagesAdded.getLast()+1);
+                    interSampleIntervals.add(currentIntervalLength);
+                    currentIntervalLength = 0;
+                    int samplesAdded;
+                    if(i==0){
+                        samplesAdded = intervals.getLineageCount(0);
+                    } else {
+                        samplesAdded = -intervals.getCoalescentEvents(i-1);
                     }
-                    afterSample = true;
-                } else {
-                    afterSample = false;
+
+                    lineagesAdded.add(samplesAdded);
+
                 }
             }
 
@@ -882,7 +894,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
             double totalDuration = intervals.getTotalDuration();
             interSampleIntervals.set(lineagesAdded.size()-1, interSampleIntervals.getLast() + tmax-(t0 + totalDuration));;
 
-            // now need to revese the order
+            // now need to reverse the order
 
             Collections.reverse(interSampleIntervals);
             Collections.reverse(lineagesAdded);
@@ -891,8 +903,8 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
         }
 
-
-        double logL = denominator;
+        double logL = -denominator;
+        double numerator = 0;
 
         double startTime = 0.0;
         final int n = intervals.getIntervalCount();
@@ -911,7 +923,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
             final double kChoose2 = Binomial.choose2(lineageCount);
             // common part
-            logL += -kChoose2 * intervalArea;
+            numerator += -kChoose2 * intervalArea;
 
             if (intervals.getIntervalType(i) == IntervalType.COALESCENT) {
 
@@ -923,7 +935,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
                 if (duration == 0.0 || demographicAtCoalPoint * (intervalArea / duration) >= threshold) {
                     //                if( duration == 0.0 || demographicAtCoalPoint >= threshold * (duration/intervalArea) ) {
-                    logL -= Math.log(demographicAtCoalPoint);
+                    numerator -= Math.log(demographicAtCoalPoint);
                 } else {
                     // remove this at some stage
                     //  System.err.println("Warning: " + i + " " + demographicAtCoalPoint + " " + (intervalArea/duration) );
@@ -933,7 +945,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
             startTime = finishTime;
         }
 
+        logL = logL + numerator;
+
         return logL;
+
     }
 
 
@@ -1054,7 +1069,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         int n=1;
         double term = 1; // initialize the term at something > tol
         while ((term > tol2) & (n < maxn)) {
-            term = FastMath.pow(1.0 - rho, n) * pgamma(Yr, n * atr, btr);
+            term = FastMath.pow(1.0 - rho, n) * pgamma(Yr, n * atr, 1/btr);
             Z = Z+term;
             n=n+1;
         }
@@ -1066,7 +1081,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     }
 
     private double getLogBlockLike(double tblock, int n, double Yr) {
-        double blockLike = (1-FastMath.pow(rho,n)) * dgamma(tblock, n*atr, btr) / getBlockCondition(p0,rho, atr, btr, Yr);
+        double blockLike = FastMath.pow(1-rho,n) * dgamma(tblock, n*atr, 1/btr) / getBlockCondition(p0,rho, atr, 1/btr, Yr);
 //	    double blockLike = (1-FastMath.pow(rho,n)) * dgamma(tblock, n*a, b) / getBlockCondition(p0,rho, a, b, Yr);
         double logBlockLike = FastMath.log(blockLike);
 //	    System.err.println("blockLike(" +tblock+"," + n +"," + Yr+") = " + blockLike);
