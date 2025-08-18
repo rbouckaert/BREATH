@@ -68,7 +68,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private PopulationFunction popSizeFunction;
     private Validator validator;
     private Function origin;
-    private double branchLengthThreshold;
+    private double branchLengthThreshold, originBranchLengthThreshold;
 
     // hazard functions for sampling and transmission respectively
 
@@ -147,6 +147,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
         conditionOnInfectionTime = conditionOnInfectionTimeInput.get();
         branchLengthThreshold = branchLengthThresholdInput.get();
+        originBranchLengthThreshold = branchLengthThresholdInput.get() * 100;
     }
 
     private double getRetainedFrac(int numSamps) {
@@ -209,7 +210,6 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         initialCalculation = false;
 
         logP = 0;
-
         if (origin.getArrayValue() < tree.getRoot().getHeight()) {
             logP = Double.NEGATIVE_INFINITY;
             return logP;
@@ -225,6 +225,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
             return logP;
         }
 
+        if (origin.getArrayValue() - tree.getRoot().getHeight() < originBranchLengthThreshold) {
+            logP += -10000;
+        }
         if (branchLengthThreshold > 0) {
             for (Node node : tree.getNodesAsArray()) {
                 if (node.getLength() < branchLengthThreshold && !node.isRoot()) {
@@ -892,7 +895,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
             // last interval needs to be extended to cover the period between final coalescence and infection
 
             double totalDuration = intervals.getTotalDuration();
-            interSampleIntervals.set(lineagesAdded.size()-1, interSampleIntervals.getLast() + tmax-(t0 + totalDuration));;
+            interSampleIntervals.set(lineagesAdded.size()-1, interSampleIntervals.get(interSampleIntervals.size()-1) + tmax-(t0 + totalDuration));;
 
             // now need to reverse the order
 
