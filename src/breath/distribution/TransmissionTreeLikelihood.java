@@ -58,6 +58,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
             + "If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though).", true);
 
     final public Input<Double> branchLengthThresholdInput = new Input<>("branchLengthThreshold", "minimal branch length for which penalty applies (to prevent very samll branch lengths)", 1e-4);
+    final public Input<Double> originBranchLengthThresholdInput = new Input<>("originBranchLengthThreshold", "minimal origin branch length (i.e. branch above the root of the tree) for which penalty applies (to prevent very samll branch lengths)", 1e-4);
 
 
     private Tree tree;
@@ -147,7 +148,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
         conditionOnInfectionTime = conditionOnInfectionTimeInput.get();
         branchLengthThreshold = branchLengthThresholdInput.get();
-        originBranchLengthThreshold = branchLengthThresholdInput.get() * 100;
+        originBranchLengthThreshold = originBranchLengthThresholdInput.get();
     }
 
     private double getRetainedFrac(int numSamps) {
@@ -226,7 +227,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         }
 
         if (origin.getArrayValue() - tree.getRoot().getHeight() < originBranchLengthThreshold) {
-            logP += -10000;
+            logP += -1e10 * (origin.getArrayValue() - tree.getRoot().getHeight());
         }
         if (branchLengthThreshold > 0) {
             for (Node node : tree.getNodesAsArray()) {

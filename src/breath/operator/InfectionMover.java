@@ -45,20 +45,107 @@ public class InfectionMover extends Operator {
         
 	@Override
 	public double proposal() {
+		
+		if (false)
+		{
+			// randomly pick internal node
+			int nodeNr = Randomizer.nextInt(tree.getNodeCount()-1);
+			if (blockCount.getArrayValue(nodeNr) < 0) {
+				// immediate reject if there is no infection
+				return Double.NEGATIVE_INFINITY;
+			}
+			// remove infection
+			removeInfectionFromPath(new Node[] {tree.getNode(nodeNr)}, 0);
+
+			// randomly pick any internal node
+			int nodeNr2 = Randomizer.nextInt(tree.getNodeCount()-1);
+			Node node2 = tree.getNode(nodeNr2);
+			// insert infection
+			insertInfectionToPath(new Node[] {node2}, node2.getLength());
+			
+			// make sure the colouring is valid
+			colourAtBase = likelihood.getFreshColouring();		
+			Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
+			if (!validator.isValid(colourAtBase)) {
+				// immediate reject if colouring is invalid
+				return Double.NEGATIVE_INFINITY;
+			}
+
+			return 0;
+		}
+		
+
+if (true)
+		if (Randomizer.nextBoolean()) {
+			// move infection to its sibling
+			
+			// randomly pick internal node
+			int nodeNr = Randomizer.nextInt(tree.getNodeCount()-1);
+			if (blockCount.getArrayValue(nodeNr) < 0) {
+				// immediate reject if there is no infection
+				return Double.NEGATIVE_INFINITY;
+			}
+			// remove infection
+			Node node = removeInfectionFromPath(new Node[] {tree.getNode(nodeNr)}, 0);
+
+			// put the infection on its sibling
+			Node sibling = node.getParent().getLeft() == node ? node.getParent().getRight() : node.getParent().getLeft(); 
+
+			// insert infection
+			insertInfectionToPath(new Node[] {sibling}, sibling.getLength());
+
+			// make sure the colouring is valid
+			colourAtBase = likelihood.getFreshColouring();		
+			Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
+			if (!validator.isValid(colourAtBase)) {
+				// immediate reject if colouring is invalid
+				return Double.NEGATIVE_INFINITY;
+			}
+
+			return 0;
+		} else {
+			// move infection anywhere in the tree
+			
+			// randomly pick internal node
+			int nodeNr = Randomizer.nextInt(tree.getNodeCount()-1);
+			if (blockCount.getArrayValue(nodeNr) < 0) {
+				// immediate reject if there is no infection
+				return Double.NEGATIVE_INFINITY;
+			}
+			// remove infection
+			Node node = removeInfectionFromPath(new Node[] {tree.getNode(nodeNr)}, 0);
+
+			// randomly pick any internal node proportional to branch length
+			double pathLength = 0;
+			for (Node node0 : tree.getNodesAsArray()) {
+				pathLength += node0.getLength();
+			}
+
+			// insert infection
+			Node node2 = insertInfectionToPath(tree.getNodesAsArray(), pathLength);
+			
+			// make sure the colouring is valid
+			colourAtBase = likelihood.getFreshColouring();		
+			Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
+			if (!validator.isValid(colourAtBase)) {
+				// immediate reject if colouring is invalid
+				return Double.NEGATIVE_INFINITY;
+			}
+
+			return Math.log(node.getLength()) - Math.log(node2.getLength());
+		}
+		
+
+		
+		
+		
+		
 		double logHR = 0;
 		//System.out.print(blockCount.getValue());
 		int pre = blockCount.getValue(0);
 		
-		// randomly pick two distinct leafs
-		int n = tree.getLeafNodeCount();
-		int i = Randomizer.nextInt(n);
-		int j = Randomizer.nextInt(n);
-		while (j == i) {
-			j = Randomizer.nextInt(n);
-		}
-		
-		// get path between two leafs
-		List<Node> path = getPathExcludingMRCA(i, j);
+		// get all nodes
+		Node [] path = tree.getNodesAsArray();
 		double pathLength = 0;
 		for (Node node : path) {
 			pathLength += node.getLength();
@@ -80,8 +167,11 @@ public class InfectionMover extends Operator {
 		int k = Randomizer.nextInt(eligbleInfectionCount);
 		Node nodeWithInfectionRemoved = removeInfectionFromPath(path, k);
 		
-		logHR += Math.log(nodeWithInfectionRemoved.getLength()/pathLength) - Math.log(1.0/eligbleInfectionCount);
+		if (nodeWithInfectionRemoved.isRoot()) {
+			return Double.NEGATIVE_INFINITY;
+		}
 		
+		logHR += Math.log(nodeWithInfectionRemoved.getLength()/pathLength) - Math.log(1.0/eligbleInfectionCount);
 		
 		Node insertionNode = insertInfectionToPath(path, pathLength);
 		
@@ -95,8 +185,6 @@ public class InfectionMover extends Operator {
 			}
 		}
 		logHR += Math.log(1.0/eligbleInfectionCount) - Math.log(insertionNode.getLength()/pathLength);
-		
-
 		
 		if (debug) {
 			int post = blockCount.getValue(0);
@@ -140,7 +228,7 @@ public class InfectionMover extends Operator {
 		}
 	}
 
-	private Node removeInfectionFromPath(List<Node> path, int k) {
+	private Node removeInfectionFromPath(Node [] path, int k) {
 		//delta = -1;
 		for (Node node : path) {
 			int nodeNr = node.getNr();
@@ -221,7 +309,7 @@ public class InfectionMover extends Operator {
 		throw new RuntimeException("Programmer error: should not get here");
 	}	
 
-	private Node insertInfectionToPath(List<Node> path, double pathLength) {
+	private Node insertInfectionToPath(Node [] path, double pathLength) {
 		// insert infection uniform randomly on path 
 
 		//delta = -1;
