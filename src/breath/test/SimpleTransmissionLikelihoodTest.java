@@ -32,7 +32,7 @@ public class SimpleTransmissionLikelihoodTest {
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 3, "value", "0 1 2");
         
         HazardFunction samplingHazard = new GammaHazardFunction();
-        samplingHazard.initByName("C", "1.0", "shape", "2.5", "rate", "10.0");
+        samplingHazard.initByName("C", "0.9", "shape", "2.5", "rate", "10.0");
         
         HazardFunction transmissionHazard = new GammaHazardFunction();
         transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
@@ -48,12 +48,14 @@ public class SimpleTransmissionLikelihoodTest {
         		"endTime", "0.0",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
-        		"lambda", "1.0");
+        		"origin", "2.5");
         
         coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals(-24.8279, transmissionLikelihood, 1e-5);
+        // assertEquals(-24.8279, transmissionLikelihood, 1e-5);
+        assertEquals(-31.37552, transmissionLikelihood, 1e-5);
+        
 	}
 
 
@@ -69,12 +71,16 @@ public class SimpleTransmissionLikelihoodTest {
         double bs2 = (2.1-0.65)/2.1;
         double bs3 = (2.1-1.8)/2.1;
         RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 2, "value",  bs1+" "+bs3);
+        blockStart.setID("blockStart");
         RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 2, "value",  bs1+" "+bs2);
+        blockEnd.setID("blockEnd");
         IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 2, "value", "0 4");
+        blockcount.setID("blockcount");
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 3, "value", "0 1 2");
+        colour.setID("colour");
         
         HazardFunction samplingHazard = new GammaHazardFunction();
-        samplingHazard.initByName("C", "1.0", "shape", "2.5", "rate", "10.0");
+        samplingHazard.initByName("C", "0.9", "shape", "2.5", "rate", "10.0");
         samplingHazard.setID("s");
         
         HazardFunction transmissionHazard = new GammaHazardFunction();
@@ -92,12 +98,14 @@ public class SimpleTransmissionLikelihoodTest {
         		"endTime", "0.0",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
-        		"lambda", "4.0");
+        		"origin", "3.0");
         
         coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals( -20.70768, transmissionLikelihood, 1e-5);
+//        assertEquals( -20.70768, transmissionLikelihood, 1e-5);
+        assertEquals( -30.39658, transmissionLikelihood, 1e-5);
+        
 	}
 	
 	@Test
@@ -158,7 +166,7 @@ public class SimpleTransmissionLikelihoodTest {
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 9,         "value", "0 1 2 3 4 0 3 2 8");
         
         HazardFunction samplingHazard = new GammaHazardFunction();
-        samplingHazard.initByName("C", "1.0", "shape", "2.5", "rate", "10.0");
+        samplingHazard.initByName("C", "0.9", "shape", "2.5", "rate", "10.0");
         samplingHazard.setID("s");
         
         HazardFunction transmissionHazard = new GammaHazardFunction();
@@ -176,13 +184,13 @@ public class SimpleTransmissionLikelihoodTest {
         		"endTime", (1.5347 - 1.7) + "",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
-        		"lambda", "4.0");
+        		"origin", "4.0");
         
         coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals( -25.45078, transmissionLikelihood, 1e-5);
-        //assertEquals( -26.10661, transmissionLikelihood, 1e-5);
+        // assertEquals( -25.45078, transmissionLikelihood, 1e-5);
+        assertEquals( -53.740599, transmissionLikelihood, 1e-5);
 	}	
 
 	@Test
@@ -208,7 +216,7 @@ public class SimpleTransmissionLikelihoodTest {
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 5,         "value", "0 1 2 1 1");
         
         HazardFunction samplingHazard = new GammaHazardFunction();
-        samplingHazard.initByName("C", "1.0", "shape", "2.5", "rate", "10.0");
+        samplingHazard.initByName("C", "0.9", "shape", "2.5", "rate", "10.0");
         samplingHazard.setID("s");
         
         HazardFunction transmissionHazard = new GammaHazardFunction();
@@ -226,11 +234,13 @@ public class SimpleTransmissionLikelihoodTest {
         		"endTime", (1.3347-1.5)+ "",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
-        		"lambda", "4.0");
+        		"origin", "4.0");
         
         coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals( -14.726, transmissionLikelihood, 1e-3);
+        // assertEquals( -14.726, transmissionLikelihood, 1e-3);
+        assertEquals( -84.83451, transmissionLikelihood, 1e-3);
+        
 	}
 }
