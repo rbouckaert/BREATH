@@ -870,15 +870,9 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     private double calculateCoalescent(SegmentIntervalList intervals, double threshold) {
 
         // first the denominator
-        double t0 = intervals.times.get(0);
         double tmax = intervals.birthTime;
         // there is an extra interval here for TMRCA to infection
         int nIntervals = intervals.getIntervalCount();
-
-if (nIntervals > 2) {
-	int h = 3;
-	h++;
-}
 
         double denominator=0;
 
@@ -932,7 +926,7 @@ if (nIntervals > 2) {
     	for (int d : lineagesAdded) {
     		maxLineageCount += d;
     	}
-    	
+
     	// lineageProb[k] = probability of having k lineages left after traversing interval i
     	double [] lineageLogProb = new double[maxLineageCount + 1];
     	
@@ -942,26 +936,33 @@ if (nIntervals > 2) {
     	// start with lineages at youngest tip
     	int currentMaxLineages = lineagesAdded.get(lineagesAdded.size()-1);
     	Arrays.fill(prevLineageLogProb, Double.NEGATIVE_INFINITY);
+    	Arrays.fill(lineageLogProb, Double.NEGATIVE_INFINITY);
     	prevLineageLogProb[currentMaxLineages] = 0;
     	
     	// traverse intervals from youngest to oldest (when 1 lineage will be left)
 		for (int i = interSampleIntervals.size()-1;  i >= 0; i--) {
 			double delta = interSampleIntervals.get(i);
-			if (i == 0) {
-				currentMaxLineages = 1;
-			}
 			for (int j = 1; j <= currentMaxLineages; j++) {
-				double sum = 0;
-				for (int k = 1; k <= j; k++) {
+				
+				// calculate the probability of exiting this interval with j lineages 
+				double sum = -Double.MAX_VALUE;
+				for (int k = 1; k <= currentMaxLineages; k++) {
 					if (Double.isFinite(prevLineageLogProb[k])) {
 						double deltaLogP = prevLineageLogProb[k] + calculateLogProbabilityOfLineageDecrementOverInterval(delta, k, j);
-						sum += LogTricks.logSum(sum, deltaLogP);
+						sum = LogTricks.logSum(sum, deltaLogP);
 					}
 				}
-				if (sum == 0) {
+				if (sum == -Double.MAX_VALUE) {
 					lineageLogProb[j] = Double.NEGATIVE_INFINITY;
 				} else {
 					lineageLogProb[j] = sum;
+				}
+				
+				if (i == 0) {
+					// i = 0 indicates we are at the last interval, 
+					// so no need to calculate lineageLogProb[j] for j > 1
+					// and we can end the loop
+					break;
 				}
 			}
 
@@ -975,7 +976,7 @@ if (nIntervals > 2) {
 			}
 		}
 		
-		return Math.log(lineageLogProb[1]);
+		return lineageLogProb[1];
 	}
 
 	public int getColour(int i) {
