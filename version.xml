@@ -1,4 +1,4 @@
-<package name="BREATH" version="0.0.2">
+<package name="BREATH" version="0.0.4">
     <depends on="BEAST.base" atleast="2.7.5"/>
     <depends on="BEAST.app" atleast="2.7.5"/>
 
@@ -24,17 +24,6 @@
 
         <provider classname="breath.evolution.LinearGrowth"/>
 
-<!--
-        <provider classname="transmission2.TransmissionTreeLikelihood"/>
-        <provider classname="transmission2.TransmissionSet"/>
-        <provider classname="transmission2.InfectionMover"/>
-        <provider classname="transmission2.InfectionCount"/>
-        <provider classname="transmission2.AddOrDeleteInfectionOperator"/>
-        <provider classname="transmission2.InfectionInitialiser"/>
-        <provider classname="transmission2.InfectorOfLogger"/>
-        <provider classname="transmission2.GeometricDistribution"/>
-        <provider classname="transmission2.BlockCountLogger"/>
--->        
 	</service>    
 	
     <service type="beastfx.app.inputeditor.InputEditor">

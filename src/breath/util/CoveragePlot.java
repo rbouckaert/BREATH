@@ -14,8 +14,8 @@ import beastfx.app.util.OutFile;
 public class CoveragePlot extends Runnable {
 	final public Input<OutFile> pngFileInput = new Input<>("png", "name of file to write bar-chart plot", new OutFile("[[none]]"));	
 	final public Input<Boolean> includeUnsampledInput = new Input<>("includeUnsampled", "include unsampled infectors in true-vs-inferred plot", true);	
-	final public Input<List<String>> truebinsdInput = new Input<>("truebins", "java array representation of true bins, e.g. `[102,30,12]`", new ArrayList<>());	
-	final public Input<List<String>> totalbinsdInput = new Input<>("totalbins", "java array representation of total bins", new ArrayList<>());	
+	final public Input<List<String>> truebinsdInput = new Input<>("true:", "java array representation of true bins, e.g. `[102,30,12]`", new ArrayList<>());	
+	final public Input<List<String>> totalbinsdInput = new Input<>("totals:", "java array representation of total bins", new ArrayList<>());	
 
 
 	@Override
