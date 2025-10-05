@@ -44,7 +44,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
 	final public Input<Function> originInput = new Input<>("origin", "time at which the study start above the root of tree. Assumed to be at root if not specified");
 	final public Input<RealParameter> endTimeInput = new Input<>("endTime", "time at which the study finished", Validate.REQUIRED);
-	//final public Input<RealParameter> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process", Validate.REQUIRED);
+	final public Input<Double> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process");
 
 	final public Input<GammaHazardFunction> samplingHazardInput = new Input<>("samplingHazard", "determines the hazard of being sampled", Validate.REQUIRED);
 	final public Input<GammaHazardFunction> transmissionHazardInput = new Input<>("transmissionHazard", "determines the hazard of transmitting an infection", Validate.REQUIRED);
@@ -141,7 +141,13 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
 		double f = getRetainedFrac(50000);
 		lambda = (Cs*f*Ctr + (1-Cs)*Ctr) ;
-
+		
+		Log.info("inferred lambda = " + lambda + " = Ctr * " + (lambda/Ctr));
+		if (lambdaTrInput.get() != null) {
+			lambda = lambdaTrInput.get();
+			Log.info("user specified lambda = " + lambda + " = Ctr * " + (lambda/Ctr));
+		}
+		
 		p0 = getp0(Cs, lambda, 0.1);
 		phi = getPhi(Cs, lambda, p0);
 		rho = getRho(phi);
