@@ -203,10 +203,10 @@ public class BlockOperator extends Operator {
 	}
 
 	
-	private int eligbleInfectionCount = 0;
+	private int eligibleInfectionCount = 0;
 	
 	
-	private int [] calcEligbleInfectionCount() {
+	private int [] calcEligibleInfectionCount() {
 		// colour the tree based on current infections
 		int [] colourAtBase = new int[tree.getNodeCount()];
 		int n = tree.getLeafNodeCount();
@@ -215,7 +215,7 @@ public class BlockOperator extends Operator {
 		// go through the whole tree, and for each branch
 		// check if removing the infection results in a valid colouring
 		// If so, add to eligbleInfectionCount
-		eligbleInfectionCount = 0;
+		eligibleInfectionCount = 0;
 		for (int i = 0; i < blockCount.getDimension(); i++) {
 			if (blockCount.getValue(i) == 0) {
 				// one infection on this branch, that if removed, can lead to invalid colouring
@@ -223,12 +223,12 @@ public class BlockOperator extends Operator {
 				// 2. colour at parent = another sampled host colour (if < n)
 				if (!(colourAtBase[i] < n && !tree.getNode(i).isRoot() && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
 					// otherwise, it can be removed, and the infection can be added to eligbleInfectionCount
-					eligbleInfectionCount += 1;
+					eligibleInfectionCount += 1;
 				}
 			} else if (blockCount.getValue(i) > 0) {
 				// more than one infection on this branch, so we can safely remove 
 				// start or end infection of the block: i.e. two possibilities
-				eligbleInfectionCount += 2;
+				eligibleInfectionCount += 2;
 			//} else {
 				// cannot remove infection and leave a valid colouring
 				// so leave eligbleInfectionCount unchanged
@@ -240,14 +240,14 @@ public class BlockOperator extends Operator {
 	private int[] chooseInfectionToRemove() {
 		// choose infection to be removed such that the remaining infections still leave a valid infection history 
 		// (i.e. there is no path between any pair of leaves that does not contain an infection)
-		int [] colourAtBase = calcEligbleInfectionCount();
+		int [] colourAtBase = calcEligibleInfectionCount();
 		int n = tree.getLeafNodeCount();
-		if (eligbleInfectionCount == 0) {
+		if (eligibleInfectionCount == 0) {
 			return null;
 		}
 		
 		// randomly pick one of the eligible infections to remove
-		int k = Randomizer.nextInt(eligbleInfectionCount);
+		int k = Randomizer.nextInt(eligibleInfectionCount);
 		
 		// loop through the eligible infections, till we find the k-th one
 		for (int i = 0; i < blockCount.getDimension(); i++) {
@@ -330,7 +330,7 @@ public class BlockOperator extends Operator {
 
 		// calculate the number of infections that can be removed safely
 		// after we added this infection
-		calcEligbleInfectionCount();
+		calcEligibleInfectionCount();
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
@@ -339,7 +339,7 @@ public class BlockOperator extends Operator {
 		// HR = ----------------------------------------------------------------------------
 		//      probability density the infection gets inserted at this branch at this point
 		// return log(HR)		
-		return Math.log(1.0/eligbleInfectionCount)
+		return Math.log(1.0/ eligibleInfectionCount)
 			   - Math.log(tree.getNode(i).getLength() / length);
 	} // insertInfection
 
@@ -389,7 +389,7 @@ public class BlockOperator extends Operator {
 		//              probability this infection got selected for removal
 		// return log(HR)		
 		return Math.log(tree.getNode(i).getLength() / length) 
-				- Math.log(1.0/eligbleInfectionCount);
+				- Math.log(1.0/ eligibleInfectionCount);
 	} // removeInfection
 
 
