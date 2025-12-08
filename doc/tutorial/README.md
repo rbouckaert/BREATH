@@ -133,7 +133,7 @@ and transmission tree population size.
 
 The BREATH tree likelihood has the following components:
 * samplingHazard: determines the hazard of being sampled. It has a sampling probability (`C` in the priors tab) and a `shape` and `rate` parameter for a Gamma distribution that determine the time of sampling after a host got infected.
-* transmissionHazard: determines the hazard of transmitting an infection. It has an average number of transmissions `C` and a `shape` and `rate` parameter for a Gamma distribution that determine the time from infection to time of infecting another host. In general, the average transmission time should be larger than the average sampling time (so shape/rate of transmission should be larger than shape/rate of the sampling hazard).
+* transmissionHazard: determines the hazard of transmitting an infection. It has an average number of transmissions `C` and a `shape` and `rate` parameter for a Gamma distribution that determine the time from infection to time of infecting another host. In general, the average transmission time should be less than the average sampling time (so shape/rate of transmission should be smaller than shape/rate of the sampling hazard).
 * endTime: time at which the study finished relative to the latest sample. So, if the units of time is years, and the study stopped collecting samples 3 months after the latest sample, it means the endTime is 1/4 year after the latest sample, and endTime=-0.25.
 <!--* deltaStartTime: time at which the study start till root of tree (optional, default: 0). -->
 * origin: time at which the study start above the root of tree. Assumed to be at root if not specified.
