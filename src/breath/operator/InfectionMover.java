@@ -76,66 +76,96 @@ public class InfectionMover extends Operator {
 		
 
 if (true)
-		if (Randomizer.nextBoolean()) {
-			// move infection to its sibling
-			
-			// randomly pick internal node
-			int nodeNr = Randomizer.nextInt(tree.getNodeCount()-1);
-			if (blockCount.getArrayValue(nodeNr) < 0) {
-				// immediate reject if there is no infection
-				return Double.NEGATIVE_INFINITY;
-			}
-			// remove infection
-			Node node = removeInfectionFromPath(new Node[] {tree.getNode(nodeNr)}, 0);
-
-			// put the infection on its sibling
-			Node sibling = node.getParent().getLeft() == node ? node.getParent().getRight() : node.getParent().getLeft(); 
-
-			// insert infection
-			insertInfectionToPath(new Node[] {sibling}, sibling.getLength());
-
-			// make sure the colouring is valid
-			colourAtBase = likelihood.getFreshColouring();		
-			Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
-			if (!validator.isValid(colourAtBase)) {
-				// immediate reject if colouring is invalid
-				return Double.NEGATIVE_INFINITY;
-			}
-
-			return 0;
-		} else {
-			// move infection anywhere in the tree
-			
-			// randomly pick internal node
-			int nodeNr = Randomizer.nextInt(tree.getNodeCount()-1);
-			if (blockCount.getArrayValue(nodeNr) < 0) {
-				// immediate reject if there is no infection
-				return Double.NEGATIVE_INFINITY;
-			}
-			// remove infection
-			Node node = removeInfectionFromPath(new Node[] {tree.getNode(nodeNr)}, 0);
-
-			// randomly pick any internal node proportional to branch length
-			double pathLength = 0;
-			for (Node node0 : tree.getNodesAsArray()) {
-				pathLength += node0.getLength();
-			}
-
-			// insert infection
-			Node node2 = insertInfectionToPath(tree.getNodesAsArray(), pathLength);
-			
-			// make sure the colouring is valid
-			colourAtBase = likelihood.getFreshColouring();		
-			Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
-			if (!validator.isValid(colourAtBase)) {
-				// immediate reject if colouring is invalid
-				return Double.NEGATIVE_INFINITY;
-			}
-
-			return Math.log(node.getLength()) - Math.log(node2.getLength());
+	if (Randomizer.nextBoolean()) {
+		// move infection to its sibling
+		
+		// randomly pick internal node
+		int nodeNr = Randomizer.nextInt(tree.getNodeCount()-1);
+		if (blockCount.getArrayValue(nodeNr) < 0) {
+			// immediate reject if there is no infection
+			return Double.NEGATIVE_INFINITY;
 		}
+		// remove infection
+		Node source = removeInfectionFromPath(new Node[] {tree.getNode(nodeNr)}, 0);
+
+		// put the infection on its sibling
+		Node sibling = source.getParent().getLeft() == source ? source.getParent().getRight() : source.getParent().getLeft();
+
+		// insert infection
+		Node target = insertInfectionToPath(new Node[] {sibling}, sibling.getLength());
 		
 
+		// make sure the colouring is valid
+		colourAtBase = likelihood.getFreshColouring();		
+		Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
+		if (!validator.isValid(colourAtBase)) {
+			// immediate reject if colouring is invalid
+			return Double.NEGATIVE_INFINITY;
+		}
+
+		double logHR = 0;
+		if (blockCount.getArrayValue(source.getNr()) < 0) {
+			double l = source.getLength();
+			logHR += 1/l;
+		} else if (blockCount.getArrayValue(source.getNr()) == 0) {
+			double l = source.getLength();
+			logHR += 2/(l*l);
+		}
+		if (blockCount.getArrayValue(target.getNr()) == 0) {
+			double l = target.getLength();
+			logHR += -1/l;
+		} else if (blockCount.getArrayValue(target.getNr()) == 1) {
+			double l = target.getLength();
+			logHR += -2/(l*l);
+		}
+		return logHR;
+	} else {
+		// move infection anywhere in the tree
+		
+		// randomly pick internal node
+		int nodeNr = Randomizer.nextInt(tree.getNodeCount()-1);
+		if (blockCount.getArrayValue(nodeNr) < 0) {
+			// immediate reject if there is no infection
+			return Double.NEGATIVE_INFINITY;
+		}
+		// remove infection
+		Node source = removeInfectionFromPath(new Node[] {tree.getNode(nodeNr)}, 0);
+
+		// randomly pick any internal node proportional to branch length
+		double pathLength = 0;
+		for (Node node0 : tree.getNodesAsArray()) {
+			pathLength += node0.getLength();
+		}
+
+		// insert infection
+		Node target = insertInfectionToPath(tree.getNodesAsArray(), pathLength);
+		
+		// make sure the colouring is valid
+		colourAtBase = likelihood.getFreshColouring();		
+		Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
+		if (!validator.isValid(colourAtBase)) {
+			// immediate reject if colouring is invalid
+			return Double.NEGATIVE_INFINITY;
+		}
+
+		double logHR = 0;
+		if (blockCount.getArrayValue(source.getNr()) < 0) {
+			double l = source.getLength();
+			logHR += 1/l;
+		} else if (blockCount.getArrayValue(source.getNr()) == 0) {
+			double l = source.getLength();
+			logHR += 2/(l*l);
+		}
+		if (blockCount.getArrayValue(target.getNr()) == 0) {
+			double l = target.getLength();
+			logHR += -1/l;
+		} else if (blockCount.getArrayValue(target.getNr()) == 1) {
+			double l = target.getLength();
+			logHR += -2/(l*l);
+		}
+		logHR += Math.log(source.getLength()) - Math.log(target.getLength());
+		return logHR;
+	}
 		
 		
 		
@@ -153,38 +183,38 @@ if (true)
 
 		
 		// 1. determine number of eligible infections 
-		int eligbleInfectionCount = 0;
+		int eligibleInfectionCount = 0;
 		for (Node node : path) {
 			int bc = blockCount.getValue(node.getNr());
 			if (bc == 0) {
-				eligbleInfectionCount += 1;
+				eligibleInfectionCount += 1;
 			} else if (bc > 0) {
-				eligbleInfectionCount += 2;
+				eligibleInfectionCount += 2;
 			}
 		}
 
 		// 2. pick one uniformly at random from eligible nodes
-		int k = Randomizer.nextInt(eligbleInfectionCount);
+		int k = Randomizer.nextInt(eligibleInfectionCount);
 		Node nodeWithInfectionRemoved = removeInfectionFromPath(path, k);
 		
 		if (nodeWithInfectionRemoved.isRoot()) {
 			return Double.NEGATIVE_INFINITY;
 		}
 		
-		logHR += Math.log(nodeWithInfectionRemoved.getLength()/pathLength) - Math.log(1.0/eligbleInfectionCount);
+		logHR += Math.log(nodeWithInfectionRemoved.getLength()/pathLength) - Math.log(1.0/eligibleInfectionCount);
 		
 		Node insertionNode = insertInfectionToPath(path, pathLength);
 		
-		eligbleInfectionCount = 0;
+		eligibleInfectionCount = 0;
 		for (Node node : path) {
 			int bc = blockCount.getValue(node.getNr());
 			if (bc == 0) {
-				eligbleInfectionCount += 1;
+				eligibleInfectionCount += 1;
 			} else if (bc > 0) {
-				eligbleInfectionCount += 2;
+				eligibleInfectionCount += 2;
 			}
 		}
-		logHR += Math.log(1.0/eligbleInfectionCount) - Math.log(insertionNode.getLength()/pathLength);
+		logHR += Math.log(1.0/eligibleInfectionCount) - Math.log(insertionNode.getLength()/pathLength);
 		
 		if (debug) {
 			int post = blockCount.getValue(0);

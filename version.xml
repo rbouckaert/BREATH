@@ -15,6 +15,7 @@
         <provider classname="breath.operator.InfectionMover2"/>
         <provider classname="breath.operator.InfectionMover3"/>
         <provider classname="breath.operator.OriginAndRootHeightMover"/>
+        <provider classname="breath.operator.TreeWrapOperator"/>
         
 		<provider classname="breath.logger.ColouredTreeLogger"/>
         <provider classname="breath.util.InfectionCount"/>
