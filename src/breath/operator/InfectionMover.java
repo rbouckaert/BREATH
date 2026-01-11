@@ -23,6 +23,7 @@ public class InfectionMover extends Operator {
     final public Input<RealParameter> blockEndFractionInput = new Input<>("blockend", "end of block in fraction of branch length", Validate.REQUIRED);
     final public Input<IntegerParameter> blockCountInput = new Input<>("blockcount", "number of transitions inside a block", Validate.REQUIRED);
 	final public Input<TransmissionTreeLikelihood> likelihoodInput = new Input<>("likelihood", "transmission treelikelihood containing the colouring", Validate.REQUIRED);
+	final public Input<Boolean> useBranchLengthInput = new Input<>("useBranchLength", "use Branch Length in HR", true);
 
     private RealParameter blockStartFraction;
     private RealParameter blockEndFraction;
@@ -30,6 +31,7 @@ public class InfectionMover extends Operator {
     private TransmissionTreeLikelihood likelihood;
     private TreeInterface tree;
     private int [] colourAtBase;
+    private boolean useBranchLength;
 
     @Override
 	public void initAndValidate() {
@@ -38,6 +40,7 @@ public class InfectionMover extends Operator {
     	blockCount = blockCountInput.get();
     	likelihood = likelihoodInput.get();
     	tree = likelihood.treeInput.get();
+    	useBranchLength = useBranchLengthInput.get();
 	}
 
     
@@ -105,18 +108,18 @@ if (true)
 
 		double logHR = 0;
 		if (blockCount.getArrayValue(source.getNr()) < 0) {
-			double l = source.getLength();
-			logHR += 1/l;
+			double l = useBranchLength ? source.getLength() : 1;
+			logHR += Math.log(1/l);
 		} else if (blockCount.getArrayValue(source.getNr()) == 0) {
-			double l = source.getLength();
-			logHR += 2/(l*l);
+			double l = useBranchLength ? source.getLength() : 1;
+			logHR += Math.log(2/(l*l));
 		}
 		if (blockCount.getArrayValue(target.getNr()) == 0) {
-			double l = target.getLength();
-			logHR += -1/l;
+			double l = useBranchLength ? target.getLength() : 1;
+			logHR += -Math.log(1/l);
 		} else if (blockCount.getArrayValue(target.getNr()) == 1) {
-			double l = target.getLength();
-			logHR += -2/(l*l);
+			double l = useBranchLength ? target.getLength() : 1;
+			logHR += -Math.log(2/(l*l));
 		}
 		return logHR;
 	} else {
@@ -150,18 +153,18 @@ if (true)
 
 		double logHR = 0;
 		if (blockCount.getArrayValue(source.getNr()) < 0) {
-			double l = source.getLength();
-			logHR += 1/l;
+			double l = useBranchLength ? source.getLength() : 1;
+			logHR += Math.log(1/l);
 		} else if (blockCount.getArrayValue(source.getNr()) == 0) {
-			double l = source.getLength();
-			logHR += 2/(l*l);
+			double l = useBranchLength ? source.getLength() : 1;
+			logHR += Math.log(2/(l*l));
 		}
 		if (blockCount.getArrayValue(target.getNr()) == 0) {
-			double l = target.getLength();
-			logHR += -1/l;
+			double l = useBranchLength ? target.getLength() : 1;
+			logHR += -Math.log(1/l);
 		} else if (blockCount.getArrayValue(target.getNr()) == 1) {
-			double l = target.getLength();
-			logHR += -2/(l*l);
+			double l = useBranchLength ? target.getLength() : 1;
+			logHR += -Math.log(2/(l*l));
 		}
 		logHR += Math.log(source.getLength()) - Math.log(target.getLength());
 		return logHR;
