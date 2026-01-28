@@ -42,7 +42,7 @@ import javafx.scene.layout.HBox;
 @Description("Calculate coverage of who infected who")
 public class InfectedByCoverageCalculator extends Runnable {
 	final public Input<LogFile> truthInput = new Input<>("truth", "trace file with true infection information", Validate.REQUIRED);
-	final public Input<Integer> skipLogLinesInput = new Input<>("skip", "numer of true log file lines to skip", 0);
+	final public Input<Integer> skipLogLinesInput = new Input<>("skip", "numer of true log file lines to skip", 1);
 	final public Input<File> logFilePrefixInput = new Input<>("logFilePrefix", "log file name without the number and '.log' missing. It is assumed there are as many log files as there are entries in the truth file", Validate.REQUIRED);
 	final public Input<OutFile> outputInput = new Input<>("out", "output file, or stdout if not specified", new OutFile("[[none]]"));
 	final public Input<Integer> burnInPercentageInput = new Input<>("burnin", "percentage of trees to used as burn-in (and will be ignored)", 10);	
