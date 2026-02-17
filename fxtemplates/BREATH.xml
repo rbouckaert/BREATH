@@ -10,9 +10,9 @@ TransMissionSubtreeSlide/index/=Operators/SubtreeSlide/,
 TransMissionNarrow/index/=Operators/Exchange/,
 TransMissionWide/index/=Operators/Exchange/,
 TransMissionWilsonBalding/index/=Operators/WilsonBalding/,
-TransMissionBICEPSEpochTop/index/=Operators/EpochFlexer/,
-TransMissionBICEPSEpochAll/index/=Operators/EpochFlexer/,
-TransMissionBICEPSTreeFlex/index/=Operators/TreeStretcher/,
+TransMissionBREATHEpochTop/index/=Operators/EpochFlexer/,
+TransMissionBREATHEpochAll/index/=Operators/EpochFlexer/,
+TransMissionBREATHTreeFlex/index/=Operators/TreeStretcher/,
 TransMissionTreeRootScaler/index/=Operators/BactrianTreeScaler/
 "
 suppressInputs="breath.distribution.TransmissionTreeLikelihood.treeIntervals,
@@ -77,8 +77,45 @@ breath.distribution.GammaHazardFunction.scale
         <operator id="transmissionPopSizeScaler.t:$(n)" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:$(n)" scaleFactor="0.1" upper="10.0" weight="5.0"/>
 
         <operator id="transmissionOriginScaler.t:$(n)" spec="kernel.BactrianScaleOperator" parameter="@transmissionOrigin.t:$(n)" scaleFactor="0.1" upper="10.0" weight="0.5"/>
+
+        <operator id="BREATHEpochTopWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="2.0">
+                <operator id="BREATHEpochTop.t:$(n)" spec="EpochFlexOperator" scaleFactor="0.1" tree="@Tree.t:$(n)" weight="2.0"/>
+        </operator>
+        <operator id="BREATHEpochAllWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="2.0">
+                <operator id="BREATHEpochAll.t:$(n)" spec="EpochFlexOperator" fromOldestTipOnly="false" scaleFactor="0.1" tree="@Tree.t:$(n)" weight="2.0"/>
+        </operator>
+        <operator id="BREATHTreeFlexWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="2.0">
+                <operator id="BREATHTreeFlex.t:$(n)" spec="TreeStretchOperator" scaleFactor="0.01" tree="@Tree.t:$(n)" weight="2.0"/>
+        </operator>
+        <operator id="BREATHTreeRootScalerWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="3.0">
+                <operator id="BREATHTreeRootScaler.t:$(n)" spec="kernel.BactrianScaleOperator" rootOnly="true" scaleFactor="0.1" tree="@Tree.t:$(n)" upper="10.0" weight="3.0"/>
+        </operator>
+        <operator id="BREATHUniformWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="30.0">
+                <operator id="BREATHUniformOperator.t:$(n)" spec="kernel.BactrianNodeOperator" tree="@Tree.t:$(n)" weight="30.0"/>
+        </operator>
+        <operator id="BREATHSubtreeSlideWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="15.0">
+                <operator id="BREATHSubtreeSlide.t:$(n)" spec="kernel.BactrianSubtreeSlide" tree="@Tree.t:$(n)" weight="15.0"/>
+        </operator>
+        <operator id="BREATHNarrowWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="15.0">
+                <operator id="BREATHNarrow.t:$(n)" spec="Exchange" tree="@Tree.t:$(n)" weight="15.0"/>
+        </operator>
+        <operator id="BREATHWideWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="3.0">
+                <operator id="BREATHWide.t:$(n)" spec="Exchange" isNarrow="false" tree="@Tree.t:$(n)" weight="3.0"/>
+        </operator>
+        <operator id="BREATHWilsonBaldingWrapOperator.t:$(n)" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:$(n)" weight="3.0">
+                <operator id="BREATHWilsonBalding.t:$(n)" spec="WilsonBalding" tree="@Tree.t:$(n)" weight="3.0"/>
+        </operator> 
+
 ]]>
-			<plate fragment="TreeOperators" var="m" range="transmissionLikelihood"/>
+            <connect srcID='BREATHEpochTopWrapOperator.t:$(n)'            targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Epoch operator that only scale internal nodes above least recent node for tree t:$(n)</connect>
+            <connect srcID='BREATHEpochAllWrapOperator.t:$(n)'            targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Epoch operator that scales all internal nodes for tree t:$(n)</connect>
+            <connect srcID='BREATHTreeFlexWrapOperator.t:$(n)'            targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Flex operators for all internal nodes for tree t:$(n)</connect>
+            <connect srcID='BREATHTreeRootScalerWrapOperator.t:$(n)'      targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Scales root node for tree t:$(n)</connect>
+            <connect srcID='BREATHUniformWrapOperator.t:$(n)'             targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Draws new internal node heights uniformally for tree t:$(n)</connect>
+            <connect srcID='BREATHSubtreeSlideWrapOperator.t:$(n)'        targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Performs subtree slide rearrangement of tree t:$(n)</connect>
+            <connect srcID='BREATHNarrowWrapOperator.t:$(n)'              targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Narrow exchange performs local rearrangement of tree t:$(n)</connect>
+            <connect srcID='BREATHWideWrapOperator.t:$(n)'                targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Wide exchange performs global rearrangement of tree t:$(n)</connect>
+            <connect srcID='BREATHWilsonBaldingWrapOperator.t:$(n)'       targetID='mcmc' inputName='operator' if='inposterior(transmissionLikelihood.t:$(n)) and Tree.t:$(n)/estimate=true'>Performs Wilson-Balding global rearrangement of tree t:$(n)</connect>
 
             <connect srcID='BlockCountPrior.t:$(n)' targetID='prior' inputName='distribution'
                      if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
