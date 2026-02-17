@@ -339,8 +339,15 @@ public class BlockOperator extends Operator {
 		// HR = ----------------------------------------------------------------------------
 		//      probability density the infection gets inserted at this branch at this point
 		// return log(HR)		
-		return Math.log(1.0/ eligibleInfectionCount)
+		double logBadd = Math.log(1.0/ eligibleInfectionCount)
 			   - Math.log(tree.getNode(i).getLength() / length);
+		switch (blockCount.getValue(i)) {
+		case 1: /* went from no to 1 transmission */
+			return logBadd + Math.log(tree.getNode(i).getLength());
+		case 2: /* went from 1 to 2 transmissions */
+			return logBadd + Math.log(tree.getNode(i).getLength()) - Math.log(2);
+		}
+		return logBadd;
 	} // insertInfection
 
 	private double removeInfection(int [] infection) {
@@ -388,8 +395,15 @@ public class BlockOperator extends Operator {
 		// HR = ----------------------------------------------------------------------------
 		//              probability this infection got selected for removal
 		// return log(HR)		
-		return Math.log(tree.getNode(i).getLength() / length) 
-				- Math.log(1.0/ eligibleInfectionCount);
+		double logBrem = Math.log(tree.getNode(i).getLength() / length) 
+				+ Math.log(eligibleInfectionCount);
+		switch (blockCount.getValue(i)) {
+		case 0: /* went from 1 to no transmission */
+			return logBrem - Math.log(tree.getNode(i).getLength());
+		case 1: /* went from 2 to 1 transmission */
+			return logBrem + Math.log(2.0) - Math.log(tree.getNode(i).getLength());
+		}
+		return logBrem;
 	} // removeInfection
 
 
