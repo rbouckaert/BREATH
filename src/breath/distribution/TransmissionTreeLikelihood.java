@@ -148,7 +148,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 			Log.info("user specified lambda = " + lambda + " = Ctr * " + (lambda/Ctr));
 		}
 		
-		p0 = getp0(Cs, lambda, 0.1);
+		p0 = getp0(Cs, Ctr, 0.1);
 		phi = getPhi(Cs, lambda, p0);
 		rho = getRho(phi);
 
@@ -1006,22 +1006,26 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	final static double tol=1e-6;
 	private int n=0;
 
-	private double f(double x, double Cs, double lambda) {
-		return x - (1-Cs)*FastMath.exp(lambda*(x-1));
+	
+	// f = function(x) {x - (exp(-Cs))*exp(Ctr*(x-1))} 
+    private double f(double x, double Cs, double Ctr) {
+		// return x - (1-Cs)*FastMath.exp(lambda*(x-1));
+		return x - (FastMath.exp(-Cs))*FastMath.exp(Ctr*(x-1));
 	}
 
-//	private double fprime(double x, double Cs, double Ctr) {
+    // fprime = function(x) {1 - (exp(-Cs))*Ctr*exp(Ctr*(x-1))}	
+	private double fprime(double x, double Cs, double Ctr) {
 //    	return 1 - (1-Cs)*Ctr*Math.exp(Ctr*(x-1));
-//    }
+		return 1 - (FastMath.exp(-Cs))*Ctr*FastMath.exp(Ctr*(x-1));
+    }
 
-	public double getp0(double Cs, double lambda, double x0) {
+	public double getp0(double Cs, double Ctr, double x0) {
 		n=0;
-		double f = f(x0, Cs, lambda);
+		double f = f(x0, Cs, Ctr);
 		while(Math.abs(f) > tol && n < maxsteps) {
 			//x0 = x0 - f(x0, Cs, Ctr) / fprime(x0, Cs, Ctr); // Newton's method formula
-			double tmp = (1-Cs)*FastMath.exp(lambda*(x0-1));
-			x0 = x0 -(x0-tmp)/(1-tmp*lambda);
-			f = f(x0, Cs, lambda);
+			x0 = x0 - f/fprime(x0, Cs, Ctr);
+			f = f(x0, Cs, Ctr);
 			n=n+1;
 		}
 		if(n < maxsteps) {
@@ -1045,11 +1049,17 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	// recall p0 can be obtained with getp0(Cs,Ctr) 
 
 	private double getPhi(double Cs,double lambda,double p0) {
-		return(1 - p0*(1+ lambda*(1-p0)/(1-Cs)));
+		if (p0 == 0 ) { 
+			return Double.NaN; 
+		} else {        
+			return( (1-p0)*(1 - lambda*p0 / (FastMath.exp(-Cs))));
+		}
+		//return(1 - p0*(1+ lambda*(1-p0)/(1-Cs)));
 	}
 
 	private double getRho(double phi) {
-		return (1 - FastMath.exp(logS_tr(100, 0)*phi + logS_s(100, 0)));
+		return (1 - FastMath.exp(-(phi*Ctr+Cs)));
+		//return (1 - FastMath.exp(logS_tr(100, 0)*phi + logS_s(100, 0)));
 	}
 
 	final static double tol2=1e-7;
@@ -1071,7 +1081,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	}
 
 	private double getLogBlockLike(double tblock, int n, double Yr) {
-		double blockLike = (FastMath.pow(1-rho, n)) * dgamma(tblock, n*atr, btr) / getBlockCondition(p0,rho, atr, btr, Yr);
+		double blockLike = FastMath.pow(1-rho,n) * dgamma(tblock, n*atr, btr) / pgamma(Yr, n*atr, btr);
+		
+		// double blockLike = (FastMath.pow(1-rho, n)) * dgamma(tblock, n*atr, btr) / getBlockCondition(p0,rho, atr, btr, Yr);
 //	    double blockLike = (1-FastMath.pow(rho,n)) * dgamma(tblock, n*a, b) / getBlockCondition(p0,rho, a, b, Yr);
 		double logBlockLike = FastMath.log(blockLike);
 //	    System.err.println("blockLike(" +tblock+"," + n +"," + Yr+") = " + blockLike);
