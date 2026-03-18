@@ -37,10 +37,10 @@ public class TreeWrapOperator extends Operator {
 			int bc = blockCount.getValue(i);
 			if (bc == 0) {
 				double l = tree.getNode(i).getLength();
-				logHR += Math.log(l);
+				logHR -= Math.log(l);
 			} else if (bc > 0) {
 				double l = tree.getNode(i).getLength();
-				logHR += 2*Math.log(l);
+				logHR -= 2*Math.log(l);
 			}
 		}
 
@@ -54,10 +54,10 @@ public class TreeWrapOperator extends Operator {
 			int bc = blockCount.getValue(i);
 			if (bc == 0) {
 				double l = tree.getNode(i).getLength();
-				logHR -= Math.log(l);
+				logHR += Math.log(l);
 			} else if (bc > 0) {
 				double l = tree.getNode(i).getLength();
-				logHR -= 2*Math.log(l);
+				logHR += 2*Math.log(l);
 			}
 		}
 		
