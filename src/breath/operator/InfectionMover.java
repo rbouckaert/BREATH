@@ -77,7 +77,6 @@ public class InfectionMover extends Operator {
         if (true)
             if (Randomizer.nextBoolean()) {
                 // move infection to its sibling
-
                 // randomly pick internal node
                 int eligibleNodesBefore = 0;
                 for(int i = 0; i < tree.getNodeCount()-1; i++) {
@@ -99,7 +98,6 @@ public class InfectionMover extends Operator {
 
                 // insert infection
                 Node target = insertInfectionToPath(new Node[]{sibling}, sibling.getLength());
-
 
                 // make sure the colouring is valid
                 colourAtBase = likelihood.getFreshColouring();

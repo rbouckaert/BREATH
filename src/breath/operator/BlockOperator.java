@@ -18,69 +18,69 @@ import breath.distribution.ColourProvider;
 @Description("Operator that moves block parameters of a transmission tree")
 public class BlockOperator extends Operator {
 	final public Input<RealParameter> blockStartFractionInput = new Input<>("blockstart", "start of block in fraction of branch length", Validate.REQUIRED);
-    final public Input<RealParameter> blockEndFractionInput = new Input<>("blockend", "end of block in fraction of branch length", Validate.REQUIRED);
-    final public Input<IntegerParameter> blockCountInput = new Input<>("blockcount", "number of transitions inside a block", Validate.REQUIRED);
-    final public Input<Boolean> keepConstantCountInput = new Input<>("keepconstantcount", "if true, for every deleting there is an insertion to keep total sum of block counts constant", false);
-    final public Input<TreeInterface> treeInput = new Input<>("tree", "tree over which to calculate a prior or likelihood", Validate.REQUIRED);
+	final public Input<RealParameter> blockEndFractionInput = new Input<>("blockend", "end of block in fraction of branch length", Validate.REQUIRED);
+	final public Input<IntegerParameter> blockCountInput = new Input<>("blockcount", "number of transitions inside a block", Validate.REQUIRED);
+	final public Input<Boolean> keepConstantCountInput = new Input<>("keepconstantcount", "if true, for every deleting there is an insertion to keep total sum of block counts constant", false);
+	final public Input<TreeInterface> treeInput = new Input<>("tree", "tree over which to calculate a prior or likelihood", Validate.REQUIRED);
 
-    private RealParameter blockStartFraction;
-    private RealParameter blockEndFraction;
-    private IntegerParameter blockCount;
-    private TreeInterface tree;
-    private double lowerStart, upperStart;
-    private double lowerEnd, upperEnd;
-    
-    @Override
+	private RealParameter blockStartFraction;
+	private RealParameter blockEndFraction;
+	private IntegerParameter blockCount;
+	private TreeInterface tree;
+	private double lowerStart, upperStart;
+	private double lowerEnd, upperEnd;
+
+	@Override
 	public void initAndValidate() {
-    	blockStartFraction = blockStartFractionInput.get();
-    	blockEndFraction = blockEndFractionInput.get();
-    	blockCount = blockCountInput.get();
-    	tree = treeInput.get();
-    	
-    	lowerStart = blockStartFraction.getLower();
-    	if (lowerStart < 0) {
-    		lowerStart = 0;
-    	}
-    	if (lowerStart > 1) {
-    		throw new IllegalArgumentException("lower bound of block start should be less than 1");
-    	}
-    	upperStart = blockStartFraction.getUpper();
-    	if (upperStart < 0) {
-    		upperStart = 0;
-    	}
-    	if (upperStart > 1) {
-    		throw new IllegalArgumentException("upper bound of block start should be less than 1");
-    	}
-    	if (upperStart < lowerStart) {
-    		throw new IllegalArgumentException("upper bound of block start should be higher than lower bound");
-    	}
+		blockStartFraction = blockStartFractionInput.get();
+		blockEndFraction = blockEndFractionInput.get();
+		blockCount = blockCountInput.get();
+		tree = treeInput.get();
 
-    	lowerEnd = blockEndFraction.getLower();
-    	if (lowerEnd < 0) {
-    		lowerEnd = 0;
-    	}
-    	if (lowerEnd > 1) {
-    		throw new IllegalArgumentException("lower bound of block end should be less than 1");
-    	}
-    	upperEnd = blockEndFraction.getUpper();
-    	if (upperEnd < 0) {
-    		upperEnd = 0;
-    	}
-    	if (upperEnd > 1) {
-    		throw new IllegalArgumentException("upper bound of block end should be less than 1");
-    	}
-    	if (upperEnd < lowerEnd) {
-    		throw new IllegalArgumentException("upper bound of block end should be higher than lower bound");
-    	}
-    	
-    	if (lowerStart > lowerEnd) {
-    		throw new IllegalArgumentException("lower bound of block start should be lower than lower bound of block end");
-    	}
-    	if (upperStart > upperEnd) {
-    		throw new IllegalArgumentException("upper bound of block start should be lower than upper bound of block end");
-    	}
-    	
-    }
+		lowerStart = blockStartFraction.getLower();
+		if (lowerStart < 0) {
+			lowerStart = 0;
+		}
+		if (lowerStart > 1) {
+			throw new IllegalArgumentException("lower bound of block start should be less than 1");
+		}
+		upperStart = blockStartFraction.getUpper();
+		if (upperStart < 0) {
+			upperStart = 0;
+		}
+		if (upperStart > 1) {
+			throw new IllegalArgumentException("upper bound of block start should be less than 1");
+		}
+		if (upperStart < lowerStart) {
+			throw new IllegalArgumentException("upper bound of block start should be higher than lower bound");
+		}
+
+		lowerEnd = blockEndFraction.getLower();
+		if (lowerEnd < 0) {
+			lowerEnd = 0;
+		}
+		if (lowerEnd > 1) {
+			throw new IllegalArgumentException("lower bound of block end should be less than 1");
+		}
+		upperEnd = blockEndFraction.getUpper();
+		if (upperEnd < 0) {
+			upperEnd = 0;
+		}
+		if (upperEnd > 1) {
+			throw new IllegalArgumentException("upper bound of block end should be less than 1");
+		}
+		if (upperEnd < lowerEnd) {
+			throw new IllegalArgumentException("upper bound of block end should be higher than lower bound");
+		}
+
+		if (lowerStart > lowerEnd) {
+			throw new IllegalArgumentException("lower bound of block start should be lower than lower bound of block end");
+		}
+		if (upperStart > upperEnd) {
+			throw new IllegalArgumentException("upper bound of block start should be lower than upper bound of block end");
+		}
+
+	}
 
 	@Override
 	public double proposal() {
@@ -96,11 +96,11 @@ public class BlockOperator extends Operator {
 //				return insertInfection0(k);
 //			}
 
-		
-		
+
+
 		if (Randomizer.nextBoolean()) {
 			// move block boundaries for a branch that has a non-empty block
-			
+
 			int i = Randomizer.nextInt(blockStartFraction.getDimension());
 
 			int attempts = 0;
@@ -108,30 +108,30 @@ public class BlockOperator extends Operator {
 				i = Randomizer.nextInt(blockStartFraction.getDimension());
 				attempts++;
 			}
-				
+
 			// only move start and end fraction but not block count
 			switch (blockCount.getValue(i)) {
-			case -1:
-				// nothing to do since start and end fractions are ignored
-				break;
-			case 0:
-				// make sure start == end fraction after proposal
-				double f = lowerStart + Randomizer.nextDouble() * (upperEnd - lowerStart);
-				blockStartFraction.setValue(i, f);
-				blockEndFraction.setValue(i, f);
-				break;
-			default:
-				double blockStart = Randomizer.nextDouble();
-				double blockEnd = Randomizer.nextDouble();
-				if (blockEnd < blockStart) {
-					double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
-				}
-				blockStartFraction.setValue(i, blockStart);
-				blockEndFraction.setValue(i, blockEnd);					
+				case -1:
+					// nothing to do since start and end fractions are ignored
+					break;
+				case 0:
+					// make sure start == end fraction after proposal
+					double f = lowerStart + Randomizer.nextDouble() * (upperEnd - lowerStart);
+					blockStartFraction.setValue(i, f);
+					blockEndFraction.setValue(i, f);
+					break;
+				default:
+					double blockStart = Randomizer.nextDouble();
+					double blockEnd = Randomizer.nextDouble();
+					if (blockEnd < blockStart) {
+						double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
+					}
+					blockStartFraction.setValue(i, blockStart);
+					blockEndFraction.setValue(i, blockEnd);
 			}
 			return 0;
 		}
-		
+
 		if (keepConstantCountInput.get()) {
 			// NB By deafult keepConstantCount == false, so should not get here
 			// but if it does 
@@ -148,15 +148,15 @@ public class BlockOperator extends Operator {
 			}
 			int k = chooseBlockToInsert();
 			logHR += insertInfection(k);
-			
+
 			int post = blockCount.getValue(0);
 			updateStats(pre, post);
 
-			
+
 			return 0*logHR;
 		} else	if (Randomizer.nextBoolean()) {
 			// remove one infection
-			
+
 			// first, find an infection to remove
 			// possibly, no infection can be removed safely 
 			// (i.e. such that the remaining colouring is valid)
@@ -164,21 +164,21 @@ public class BlockOperator extends Operator {
 			if (i == null) {
 				return Double.NEGATIVE_INFINITY;
 			}
-			
+
 			// found a good candidate, so remove it
 			return removeInfection(i);
 		} else {
 			// add one infection
-			
+
 			// it is always possible to add infections, so no special 
 			// case here (unlike when removing infections)
 			int k = chooseBlockToInsert();
 			return insertInfection(k);
 		}
-		
+
 	}
 
-    int [][] stats = new int[3][3];
+	int [][] stats = new int[3][3];
 	private void updateStats(int pre, int post) {
 		if (true) return;
 		stats[1+pre][1+post]++;
@@ -197,21 +197,21 @@ public class BlockOperator extends Operator {
 			b.append((stats[1][0] + stats[1][1] + stats[1][2])/t+ " " );
 			b.append((stats[2][1] + stats[2][2])/t);
 			b.append("\n");
-			
+
 			System.out.println(b.toString());
 		}
 	}
 
-	
+
 	private int eligibleInfectionCount = 0;
-	
-	
+
+
 	private int [] calcEligibleInfectionCount() {
 		// colour the tree based on current infections
 		int [] colourAtBase = new int[tree.getNodeCount()];
 		int n = tree.getLeafNodeCount();
 		ColourProvider.getColour(tree.getRoot(), blockCount, n, colourAtBase);
-		
+
 		// go through the whole tree, and for each branch
 		// check if removing the infection results in a valid colouring
 		// If so, add to eligbleInfectionCount
@@ -229,14 +229,14 @@ public class BlockOperator extends Operator {
 				// more than one infection on this branch, so we can safely remove 
 				// start or end infection of the block: i.e. two possibilities
 				eligibleInfectionCount += 2;
-			//} else {
+				//} else {
 				// cannot remove infection and leave a valid colouring
 				// so leave eligbleInfectionCount unchanged
 			}
 		}
 		return colourAtBase;
 	}
-	
+
 	private int[] chooseInfectionToRemove() {
 		// choose infection to be removed such that the remaining infections still leave a valid infection history 
 		// (i.e. there is no path between any pair of leaves that does not contain an infection)
@@ -245,10 +245,10 @@ public class BlockOperator extends Operator {
 		if (eligibleInfectionCount == 0) {
 			return null;
 		}
-		
+
 		// randomly pick one of the eligible infections to remove
 		int k = Randomizer.nextInt(eligibleInfectionCount);
-		
+
 		// loop through the eligible infections, till we find the k-th one
 		for (int i = 0; i < blockCount.getDimension(); i++) {
 			if (blockCount.getValue(i) == 0) {
@@ -265,19 +265,19 @@ public class BlockOperator extends Operator {
 		}
 		throw new RuntimeException("Programmer error: should not get here");
 	}
-	
+
 	private int chooseBlockToInsert() {
 		// choose random location on branch proportional to lengths of branches
-		
+
 		// first calculate length of tree
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
 		}
-		
+
 		// random point on length
 		double r = Randomizer.nextDouble() * length;
-		
+
 		// find the node associated with r
 		int i = 0;
 		while (r > 0) {
@@ -291,41 +291,35 @@ public class BlockOperator extends Operator {
 		throw new RuntimeException("Programmer error: should not get here");
 	}
 
-	
+
 	/** insert infection on branch i **/
 	private double insertInfection(int i) {
-		
+
 		switch (blockCount.getValue(i)) {
-		case -1:
-			// add infection on branch without any infection
-			// a random location on the branch must be chosen to put it
-			// start and end of block must be equal
-			blockCount.setValue(i, 0);
-			double f = Randomizer.nextDouble();
-			blockStartFraction.setValue(i, f);
-			blockEndFraction.setValue(i, f);
-			break;
-			
-		case 0:
-			// add infection to branch already containing an infection
-			// since block start == block end, we need to choose new values for
-			// start and end
-			blockCount.setValue(i, 1);
-			
-			double blockStart = Randomizer.nextDouble();
-			double blockEnd = Randomizer.nextDouble();
-			if (blockEnd < blockStart) {
-				double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
-			}
-			blockStartFraction.setValue(i, blockStart);
-			blockEndFraction.setValue(i, blockEnd);					
-			break;
-		
-		default:
-			// add infection to block already containing 2 infections
-			// assume it goes inside the block, so no need to update block boundaries
-			blockCount.setValue(i, blockCount.getValue(i)+1);
-			
+			case -1:
+				// do nothing; this parameter does not currently exist
+				break;
+
+			case 0:
+				// add infection to branch already containing an infection
+				// since block start == block end, we need to choose new values for
+				// start and end
+				blockCount.setValue(i, 1);
+
+				double blockStart = Randomizer.nextDouble();
+				double blockEnd = Randomizer.nextDouble();
+				if (blockEnd < blockStart) {
+					double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
+				}
+				blockStartFraction.setValue(i, blockStart);
+				blockEndFraction.setValue(i, blockEnd);
+				break;
+
+			default:
+				// add infection to block already containing 2 infections
+				// assume it goes inside the block, so no need to update block boundaries
+				blockCount.setValue(i, blockCount.getValue(i)+1);
+
 		}
 
 		// calculate the number of infections that can be removed safely
@@ -340,12 +334,12 @@ public class BlockOperator extends Operator {
 		//      probability density the infection gets inserted at this branch at this point
 		// return log(HR)		
 		double logBadd = Math.log(1.0/ eligibleInfectionCount)
-			   - Math.log(tree.getNode(i).getLength() / length);
+				- Math.log(tree.getNode(i).getLength() / length);
 		switch (blockCount.getValue(i)) {
-		case 1: /* went from no to 1 transmission */
-			return logBadd + Math.log(tree.getNode(i).getLength());
-		case 2: /* went from 1 to 2 transmissions */
-			return logBadd + Math.log(tree.getNode(i).getLength()) - Math.log(2);
+			case 1: /* went from no to 1 transmission */
+				return logBadd + Math.log(tree.getNode(i).getLength());
+			case 2: /* went from 1 to 2 transmissions */
+				return logBadd + Math.log(tree.getNode(i).getLength()) - Math.log(2);
 		}
 		return logBadd;
 	} // insertInfection
@@ -353,67 +347,59 @@ public class BlockOperator extends Operator {
 	private double removeInfection(int [] infection) {
 		int i = infection[0];
 		switch (blockCount.getValue(i)) {
-		case -1:
-			// do nothing, should not get here
-			return 0; 
-			
-		case 0:
-			// remove infection: no infections left
-			blockCount.setValue(i, -1);
-			break;
-			
-		case 1:
-			// remove infection: 1 infection left, so block start and end time becomes the same
-			blockCount.setValue(i, 0);
-			if (Randomizer.nextBoolean()) {
-				blockStartFraction.setValue(i, blockEndFraction.getValue(i));
-			} else {
-				blockEndFraction.setValue(i, blockStartFraction.getValue(i));
-			}
-			// potentially, this should draw a new random value
-			// for block start == block end to be symmetric with
-			// adding an infection, like so:
-//			double blockStart = Randomizer.nextDouble();
-//			blockStartFraction.setValue(i, blockStart);
-//			blockEndFraction.setValue(i, blockStart);					
+			case -1:
+				// do nothing, should not get here
+				return 0;
 
-			break;
-		default:
-			// remove infection and 2 or more infections left
-			// assume we remove one inside the block, so no change to boundaries
-			blockCount.setValue(i, blockCount.getValue(i)-1);
+			case 0:
+				// remove infection: no infections left
+				blockCount.setValue(i, -1);
+				break;
+
+			case 1:
+				// remove infection: 1 infection left, so block start and end time becomes the same
+				blockCount.setValue(i, 0);
+				double draw = Randomizer.nextDouble();
+				blockStartFraction.setValue(i, draw);
+				blockEndFraction.setValue(i, draw);
+
+				break;
+			default:
+				// remove infection and 2 or more infections left
+				// assume we remove one inside the block, so no change to boundaries
+				blockCount.setValue(i, blockCount.getValue(i)-1);
 		}
-		
-		
+
+
 		// calculate length of tree
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
 		}
-		
+
 		//      probability density the infection gets inserted at this branch at this point
 		// HR = ----------------------------------------------------------------------------
 		//              probability this infection got selected for removal
 		// return log(HR)		
-		double logBrem = Math.log(tree.getNode(i).getLength() / length) 
+		double logBrem = Math.log(tree.getNode(i).getLength() / length)
 				+ Math.log(eligibleInfectionCount);
 		switch (blockCount.getValue(i)) {
-		case 0: /* went from 1 to no transmission */
-			return logBrem - Math.log(tree.getNode(i).getLength());
-		case 1: /* went from 2 to 1 transmission */
-			return logBrem + Math.log(2.0) - Math.log(tree.getNode(i).getLength());
+			case 0: /* went from 1 to no transmission */
+				return logBrem - Math.log(tree.getNode(i).getLength());
+			case 1: /* went from 2 to 1 transmission */
+				return logBrem + Math.log(2.0) - Math.log(tree.getNode(i).getLength());
 		}
 		return logBrem;
 	} // removeInfection
 
 
 	private double insertInfection0(int i) {
-			// add infection
-			blockCount.setValue(i, blockCount.getValue(i)+1);
-			double k = blockCount.getValue(i) + 2;
-			blockStartFraction.setValue(i, 1.0/k);
-			blockEndFraction.setValue(i, (k-1.0)/k);
-			return 0;
+		// add infection
+		blockCount.setValue(i, blockCount.getValue(i)+1);
+		double k = blockCount.getValue(i) + 2;
+		blockStartFraction.setValue(i, 1.0/k);
+		blockEndFraction.setValue(i, (k-1.0)/k);
+		return 0;
 	} // insertInfection
 
 	private double removeInfection0(int [] infection) {
@@ -434,10 +420,10 @@ public class BlockOperator extends Operator {
 
 	@Override
 	public List<StateNode> listStateNodes() {
-        final List<StateNode> list = new ArrayList<>();
-        list.add(blockCount);
-        list.add(blockStartFraction);
-        list.add(blockEndFraction);
+		final List<StateNode> list = new ArrayList<>();
+		list.add(blockCount);
+		list.add(blockStartFraction);
+		list.add(blockEndFraction);
 		return list;
 	}
 }
