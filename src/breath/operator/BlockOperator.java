@@ -297,7 +297,10 @@ public class BlockOperator extends Operator {
 
 		switch (blockCount.getValue(i)) {
 			case -1:
-				// do nothing; this parameter does not currently exist
+				blockCount.setValue(i, 0);
+				double f = Randomizer.nextDouble();
+				blockStartFraction.setValue(i, f);
+				blockEndFraction.setValue(i, f);
 				break;
 
 			case 0:
@@ -359,10 +362,11 @@ public class BlockOperator extends Operator {
 			case 1:
 				// remove infection: 1 infection left, so block start and end time becomes the same
 				blockCount.setValue(i, 0);
-				double draw = Randomizer.nextDouble();
-				blockStartFraction.setValue(i, draw);
-				blockEndFraction.setValue(i, draw);
-
+				if (Randomizer.nextBoolean()) {
+					blockStartFraction.setValue(i, blockEndFraction.getValue(i));
+				} else {
+					blockEndFraction.setValue(i, blockStartFraction.getValue(i));
+				}
 				break;
 			default:
 				// remove infection and 2 or more infections left
