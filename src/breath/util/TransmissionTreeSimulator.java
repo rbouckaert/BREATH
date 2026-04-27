@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -441,7 +442,8 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 			}
 
 			// 4. Simulate the times when node infects the new infectees
-			double[] times = new double[n];
+			//double [] times = new double[n];
+			Double[] times = new Double[n];
 			for (int i = 0; i < n; i++) {
 				// Note: do not need multiply by transmissionConstant
 				r = Randomizer.nextDouble();
@@ -449,12 +451,21 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 						- transmissionIntensity.inverseCumulativeProbability(r);
 				addToLogP("TransTime", transmissionIntensity.logDensity(node.getHeight()-times[i]));
 			}
-			Arrays.sort(times);
+			
+			// remove times that are invalid: after study time, or after sample time (if any)
+			Arrays.sort(times, new Comparator<Double>() {
+				@Override
+				public int compare(Double a, Double b) {
+						 if (a > b) return -1;
+						 if (b > a) return 1;
+						 return 0;
+			}});
 			// remove times that are invalid: after study time, or after sample time (if any)
 			while (n > 0 && (times[n - 1] < 0 || times[n - 1] < sampletime)) {
 				n--;
 			}
 			
+						
 			List<Node> current = new ArrayList<>();
 			// create leaf node
 			if (sample) {
@@ -485,7 +496,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 
 			
 			// 5. Sampling a within-host phylogeny
-			double currentHeight = sample ? sampletime : (n > 0 ? times[0] : 0);
+			double currentHeight = sample ? sampletime : (n > 0 ? times[n-1] : 0);
 			
 			double [] logPCoalescent = new double[1];
 			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get(), logPCoalescent);
