@@ -78,6 +78,8 @@ public class TransmissionTreeSimulator extends Runnable {
 	final public Input<Boolean> quietInput = new Input<>("quiet", "suppress some screen output", false);
 	final public Input<Boolean> calcLogPInput = new Input<>("calcLogP", "calculate transmission likelihood for generated trees", false);
 
+	final public Input<Double> incubationProportionInput = new Input<>("incubationProportion", "proportion of transmission hazard that should be considered incubation time", 0.0);
+
 	private Node root;
 	private Map<Node, Integer> colourMap;
 	private int nodeCount;
@@ -88,6 +90,15 @@ public class TransmissionTreeSimulator extends Runnable {
 	
 	@Override
 	public void initAndValidate() {
+	}
+	
+	// class for tracking colour of branches 
+	// this is for debugging only -- it does not contribute anything to the simulation process
+	class ColouredNode extends Node {
+		int colour = -1;
+		void setColour(int colour) {
+			this.colour = colour;
+		}
 	}
 
 	@Override
@@ -340,6 +351,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 			int i = taxonCountInput.get() ;
 			if (i > 0) {
 				Log.warning.println("mean #transmissions per taxon: " + f.format((double)infectionCounts.get(i) / (i*treeCountInput.get())));
+				Log.warning.println("Max block count: " + maxBlockCount);
 			}
 		} else {
 			Log.warning("#taxa\tpercentage of trees\tinfection count per taxon");
@@ -395,7 +407,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 		double transmissionRate = transmissionRateInput.get().getArrayValue();
 		double transmissionConstant = transmissionConstantInput.get().getArrayValue();
 
-		root = new Node();
+		root = new ColouredNode();
 		root.setHeight(endTime);
 		List<Node> nodes = new ArrayList<>();
 		nodes.add(root);
@@ -404,13 +416,13 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 		GammaDistribution sampleIntensity = new GammaDistributionImpl(sampleShape, 1.0 / sampleRate);
 		GammaDistribution transmissionIntensity = new GammaDistributionImpl(transmissionShape, 1.0 / transmissionRate);
 		
-		
 		PopulationFunction popFun = getPopFun();
 
 		List<Node> leafs = new ArrayList<>();
 		int colour = 0;
 		colourMap = new HashMap<>();
 		colourMap.put(root, colour);
+		((ColouredNode)root).setColour(colour);
 		
 		this.logP = 0;
 		while (nodes.size() > 0) {
@@ -444,12 +456,15 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 			// 4. Simulate the times when node infects the new infectees
 			//double [] times = new double[n];
 			Double[] times = new Double[n];
+			double threshold = incubationProportionInput.get();
 			for (int i = 0; i < n; i++) {
 				// Note: do not need multiply by transmissionConstant
-				r = Randomizer.nextDouble();
+				r = threshold + Randomizer.nextDouble() * (1.0 - threshold);
+				double delta = transmissionIntensity.inverseCumulativeProbability(r);
 				times[i] = node.getHeight()
-						- transmissionIntensity.inverseCumulativeProbability(r);
-				addToLogP("TransTime", transmissionIntensity.logDensity(node.getHeight()-times[i]));
+						- delta;
+				//addToLogP("TransTime", transmissionIntensity.logDensity(node.getHeight()-times[i]));
+				addToLogP("TransTime", delta);
 			}
 			
 			// remove times that are invalid: after study time, or after sample time (if any)
@@ -469,7 +484,8 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 			List<Node> current = new ArrayList<>();
 			// create leaf node
 			if (sample) {
-				Node leaf = new Node();
+				ColouredNode leaf = new ColouredNode();
+				leaf.setColour(colour);
 				colourMap.put(leaf, colour);
 				leaf.setHeight(sampletime);
 				leafs.add(leaf);
@@ -487,7 +503,8 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 			}
 			// create internal (infection) nodes
 			for (int i = 0; i < n; i++) {
-				Node infectee = new Node();
+				ColouredNode infectee = new ColouredNode();
+				infectee.setColour(colour);
 				colourMap.put(infectee, colour);
 				infectee.setHeight(times[i]);
 				nodes.add(infectee);
@@ -499,7 +516,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 			double currentHeight = sample ? sampletime : (n > 0 ? times[n-1] : 0);
 			
 			double [] logPCoalescent = new double[1];
-			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get(), logPCoalescent);
+			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get(), logPCoalescent, colour);
 			addToLogP("Coalescent:", logPCoalescent[0]);
 			if (fragment == null) {
 				if (!quietInput.get()) {
@@ -536,7 +553,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 	}
 
 	private void addToLogP(String caller, double log) {
-//		System.err.println(caller + " " + log);
+		// if (caller.startsWith("TransTime"))System.err.println(caller + " " + log);
 		logP += log;
 	}
 
@@ -559,9 +576,10 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 	}
 	
 	private Node simulateCoalescent(List<Node> current, PopulationFunction popFun, double currentHeight,
-			double height, int maxAttemptCount, double [] logPCoalescent) {
+			double height, int maxAttemptCount, double [] logPCoalescent, int colour) {
 		if (current.size() == 0) {
-			Node node =  new Node();
+			ColouredNode node =  new ColouredNode();
+			node.setColour(colour);
 			node.setHeight(currentHeight);
 			return node;
 		}
@@ -570,7 +588,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 		int attempt = 0;
 		do {
 			List<Node> currentCopy = new ArrayList<>(current);
-			fragment = simulateCoalescent(currentCopy, popFun, currentHeight, height, logPCoalescent);
+			fragment = simulateCoalescent(currentCopy, popFun, currentHeight, height, logPCoalescent, colour);
 			if (fragment.size() == 1) {
 				return fragment.get(0);
 			}
@@ -640,6 +658,8 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 		return 0;		
 	}
 	
+	int maxBlockCount = -1;
+	
 	private String toNewick(Node node) {
 		switch(node.getChildCount()) {
 		case 0: {// leaf
@@ -649,13 +669,21 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 			double blockEnd = length;
 			int blockCount = -1;
 			while (p != null && p.getChildCount() == 1) {
-				blockEnd = length;
-				length += p.getLength();
-				p = p.getParent();
-				if (colourMap.get(node) != colourMap.get(p)) {
+				if (colourMap.get(p.getChild(0)) != colourMap.get(p)) {
+					if (blockCount == -1) {
+						blockStart = length;
+					}
+					blockEnd = length;
 					blockCount++;
 				}
+				length += p.getLength();
+				if (colourMap.get(p) != ((ColouredNode)p).colour) {
+					System.err.println("Error in colour map in leaf");
+				}
+
+				p = p.getParent();
 			}
+			maxBlockCount = Math.max(maxBlockCount, blockCount);
 			return node.getID() + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",blockstart=" + (blockStart/length) + ",blockend=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length;
 		}
 		case 1:
@@ -672,16 +700,24 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 			double blockEnd = length;
 			int blockCount = -1;
 			while (p != null && p.getChildCount() == 1) {
-				blockEnd = length;
-				length += p.getLength();
-				p = p.getParent();
-				if (colourMap.get(node) != colourMap.get(p)) {
+				if (colourMap.get(p.getChild(0)) != colourMap.get(p)) {
+					if (blockCount == -1) {
+						blockStart = length;
+					}
+					blockEnd = length;
 					blockCount++;
 				}
+				length += p.getLength();
+				if (colourMap.get(p) != ((ColouredNode)p).colour) {
+					System.err.println("Error in colour map");
+				}
+				p = p.getParent();
 			}
+			maxBlockCount = Math.max(maxBlockCount, blockCount);
 			if (p == null) {
 				return "(" + leftNewick + "," + rightNewick + ")";
 			}
+			
 			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",blockstart=" + (blockStart/length) + ",blockend=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length; 
 		}
 		return null;
@@ -702,7 +738,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 	}
 	
 	public List<Node> simulateCoalescent(final List<Node> nodes, final PopulationFunction demographic,
-			double currentHeight, final double maxHeight, double [] logPCoalescent) {
+			double currentHeight, final double maxHeight, double [] logPCoalescent, int colour) {
 		// If only one node, return it
 		// continuing results in an infinite loop
 		if (nodes.size() == 1)
@@ -755,7 +791,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
 		            activeNodeCount += 1;
 		        }
 			} else {
-				currentHeight = coalesceTwoActiveNodes(currentHeight, nextCoalescentHeight, nodeList, activeNodeCount, logPCoalescent);
+				currentHeight = coalesceTwoActiveNodes(currentHeight, nextCoalescentHeight, nodeList, activeNodeCount, logPCoalescent, colour);
 				activeNodeCount--;
 			}
 
@@ -802,7 +838,7 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
      * @param height
      * @return
      */
-    private double coalesceTwoActiveNodes(final double minHeight, double height, List<Node> nodeList, int activeNodeCount, double[]logPCoalescent){
+    private double coalesceTwoActiveNodes(final double minHeight, double height, List<Node> nodeList, int activeNodeCount, double[]logPCoalescent, int colour){
         final int node1 = Randomizer.nextInt(activeNodeCount);
         int node2 = node1;
         while (node2 == node1) {
@@ -813,7 +849,8 @@ Log.warning(transmissionConstantInput.get().getArrayValue() + "");
         final Node left = nodeList.get(node1);
         final Node right = nodeList.get(node2);
 
-        final Node newNode = new Node();
+        final ColouredNode newNode = new ColouredNode();
+        newNode.setColour(colour);
 //		System.err.println(2 * m_taxa.get().getNrTaxa() - nodeList.size());
 //        newNode.setNr(nextNodeNr++);   // multiple tries may generate an excess of nodes assert(nextNodeNr <= nrOfTaxa*2-1);
         newNode.setHeight(height);
