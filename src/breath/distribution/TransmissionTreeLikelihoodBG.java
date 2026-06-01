@@ -63,38 +63,40 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 //    final public Input<Double> originBranchLengthThresholdInput = new Input<>("originBranchLengthThreshold", "minimal origin branch length (i.e. branch above the root of the tree) for which penalty applies (to prevent very samll branch lengths)", 1e-4);
 
 
-	private Tree tree;
-	private RealParameter blockStartFraction;
-	private RealParameter blockEndFraction;
-	private IntegerParameter blockCount;
-	private int [] colourAtBase;
-	private PopulationFunction popSizeFunction;
-	private Validator validator;
-	private Function origin;
-	private double branchLengthThreshold, originBranchLengthThreshold;
-
-	// hazard functions for sampling and transmission respectively
-
-	private RealParameter endTime; // end time of study
-	private double lambda;
-	private GammaHazardFunction samplingHazard;
-	private GammaHazardFunction transmissionHazard;
-
-    //private double Cs;  // CC: will not be needed in the Bernoulli-Gamma version (BG) 
-	private double Ctr;
+//	private Tree tree;
+//	private RealParameter blockStartFraction;
+//	private RealParameter blockEndFraction;
+//	private IntegerParameter blockCount;
+//	private int [] colourAtBase;
+//	private PopulationFunction popSizeFunction;
+//	private Validator validator;
+//	private Function origin;
+//	private double branchLengthThreshold, originBranchLengthThreshold;
+//
+//	// hazard functions for sampling and transmission respectively
+//
+//	private RealParameter endTime; // end time of study
+//	private double lambda;
+//	private GammaHazardFunction samplingHazard;
+//	private GammaHazardFunction transmissionHazard;
+//
+//    //private double Cs;  // CC: will not be needed in the Bernoulli-Gamma version (BG) 
+//	private double Ctr;
 	private double q;
-	private double p0;
-	private double phi;
-	// private double rho;
-	private double atr, As;
-	private double btr, Bs;
+//	private double p0;
+//	private double phi;
+//	private double rho;
+//	private double atr, As;
+//	private double btr, Bs;
+	private double As;
+	private double Bs;
 
 	//private double a, b;
 
-	private boolean updateColours = true;
-	private boolean allowTransmissionsAfterSampling;
-	private boolean initialCalculation = true;
-	private boolean conditionOnInfectionTime = true;
+//	private boolean updateColours = true;
+//	private boolean allowTransmissionsAfterSampling;
+//	private boolean initialCalculation = true;
+//	private boolean conditionOnInfectionTime = true;
 
 	@Override
 	public void initAndValidate() {
@@ -136,11 +138,11 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		samplingHazard = samplingHazardInput.get();
 		As = samplingHazard.shapeInput.get().getArrayValue();
 		Bs = samplingHazard.getRate();
-		transmissionHazard = transmissionHazardInput.get();
-
-		double Cs = samplingHazard.constantInput.get().getArrayValue(); // CC: We could set Cs=1 and use q for the sampling fraction
+		
+		Cs = samplingHazard.constantInput.get().getArrayValue(); // CC: We could set Cs=1 and use q for the sampling fraction
 		q = 1.0 - Math.exp(-Cs);
 		
+		transmissionHazard = transmissionHazardInput.get();
 		Ctr = transmissionHazard.constantInput.get().getArrayValue();
 		atr = transmissionHazard.shapeInput.get().getArrayValue();
 		btr = transmissionHazard.getRate();
@@ -150,19 +152,19 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		lambda = Ctr;
 		
 		Log.info("inferred lambda = " + lambda + " = Ctr * " + (lambda/Ctr));
-		if (lambdaTrInput.get() != null) {
-			lambda = lambdaTrInput.get();
-			Log.info("user specified lambda = " + lambda + " = Ctr * " + (lambda/Ctr));
-		}
+//		if (lambdaTrInput.get() != null) {
+//			lambda = lambdaTrInput.get();
+//			Log.info("user specified lambda = " + lambda + " = Ctr * " + (lambda/Ctr));
+//		}
 		
-		p0 = getp0(Cs, Ctr, 0.1);
-		phi = getPhi(Cs, lambda, p0); // CC: Use Ctr for lambda here 
-		//rho = getRho(phi, start, endTime);
+        p0 = getp0(Cs, lambda, 0.1);
+        phi = getPhi(Cs, lambda, p0);
+        rho = getRho(phi, Cs, Ctr);
 
 		allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
 		conditionOnInfectionTime = conditionOnInfectionTimeInput.get();
 		branchLengthThreshold = branchLengthThresholdInput.get();
-		originBranchLengthThreshold = originBranchLengthThresholdInput.get();
+        originBranchLengthThreshold = branchLengthThresholdInput.get() * 100;
 	}
 
 //    private double getRetainedFrac(int numSamps) { // CC: Won't be needed 
@@ -194,21 +196,21 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 //
 //		return f / numSamps;
 //	}
-
-	private void sanityCheck(RealParameter blockFraction, int n, String paramName) {
-		if (blockFraction.getDimension() != n) {
-			blockFraction.setDimension(n);
-			Log.warning("WARNING: Setting dimension of "  + paramName + " parameter " + blockFraction.getID() + " to " + n);
-		}
-		if (blockFraction.getLower() < 0) {
-			blockFraction.setLower(0.0);
-			Log.warning("WARNING: Setting lower bound of "  + paramName + " parameter " + blockFraction.getID() + " to 0");
-		}
-		if (blockFraction.getUpper() > 1) {
-			blockFraction.setUpper(1.0);
-			Log.warning("WARNING: Setting upper bound of  "  + paramName + " parameter " + blockFraction.getID() + " to 1");
-		}
-	}
+//
+//	private void sanityCheck(RealParameter blockFraction, int n, String paramName) {
+//		if (blockFraction.getDimension() != n) {
+//			blockFraction.setDimension(n);
+//			Log.warning("WARNING: Setting dimension of "  + paramName + " parameter " + blockFraction.getID() + " to " + n);
+//		}
+//		if (blockFraction.getLower() < 0) {
+//			blockFraction.setLower(0.0);
+//			Log.warning("WARNING: Setting lower bound of "  + paramName + " parameter " + blockFraction.getID() + " to 0");
+//		}
+//		if (blockFraction.getUpper() > 1) {
+//			blockFraction.setUpper(1.0);
+//			Log.warning("WARNING: Setting upper bound of  "  + paramName + " parameter " + blockFraction.getID() + " to 1");
+//		}
+//	}
 
 
 	@Override
@@ -256,7 +258,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 			return logP;
 		}
 
-		segments = collectSegments();
+		segments = collectSegmentsBG();
 
 		if (includeCoalescentInput.get()) {
 			logP += calculateCoalescent();
@@ -275,10 +277,10 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 	// initialise colourAtBase
 	// return true if a valid colouring can be found, 
 	// return false if there is a path between leafs without a transmission
-	public boolean calcColourAtBase() {
-		updateColours = ColourProvider.getColour(tree.getRoot(), blockCount, tree.getLeafNodeCount(), colourAtBase);
-		return updateColours;
-	}
+//	public boolean calcColourAtBase() {
+//		updateColours = ColourProvider.getColour(tree.getRoot(), blockCount, tree.getLeafNodeCount(), colourAtBase);
+//		return updateColours;
+//	}
 
 	public double calcTransmissionLikelihood() {
 		double d = endTime.getArrayValue();
@@ -286,7 +288,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		int n = tree.getLeafNodeCount();
 		Node [] nodes = tree.getNodesAsArray();
 		if (segments == null) {
-			segments = collectSegments();
+			segments = collectSegmentsBG();
 		}
 
 		if (origin != null) {
@@ -428,6 +430,9 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		// return transmissionHazard.logH(t, d);
 	}
 
+	
+	/** Bits to calculate coalescent contribution **/
+	
 	private List<SegmentIntervalList> segments;
 
 	public double calculateCoalescent() {
@@ -445,7 +450,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 	}
 
 	public List<Double> calculateCoalescents() {
-		segments = collectSegments();
+		segments = collectSegmentsBG();
 		List<Double> logP = new ArrayList<>();
 		for (SegmentIntervalList intervals : segments) {
 			if (intervals != null) {
@@ -459,7 +464,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		return logP;
 	}
 
-	class SegmentIntervalList implements IntervalList  {
+	private class SegmentIntervalList implements IntervalList  {
 
 		double birthTime;
 		private List<Double> times = new ArrayList<>();
@@ -657,7 +662,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 
 	}
 
-	private List<SegmentIntervalList> collectSegments() {
+	private List<SegmentIntervalList> collectSegmentsBG() {
 		List<SegmentIntervalList> segments = new ArrayList<>();
 		int nodeCount = tree.getNodeCount();
 		for (int i = 0; i < nodeCount; i++) {
@@ -1017,66 +1022,66 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 
 	// recall newton's method: x_n+1 = x_n - f(x_n)/f'(x_n) to find a root of f 
 	// here f = x- (1-C)*exp(lambda(x-1)) and f' is 1- (1-C)*lambda*exp(lambda(x-1))
-	final static int  maxsteps = 1000;
-	final static double tol=1e-6;
-	private int n=0;
+//	final static int  maxsteps = 1000;
+//	final static double tol=1e-6;
+//	private int n=0;
 
 	
 	// f = function(x) {x - (exp(-Cs))*exp(Ctr*(x-1))} // CC: here we would need q instead of exp(-Cs) 
-    private double f(double x, double Cs, double Ctr) {
-		// return x - (1-Cs)*FastMath.exp(lambda*(x-1));
-		return x - (FastMath.exp(-Cs))*FastMath.exp(Ctr*(x-1));
-	}
+//    private double f(double x, double Cs, double Ctr) {
+//		// return x - (1-Cs)*FastMath.exp(lambda*(x-1));
+//		return x - (FastMath.exp(-Cs))*FastMath.exp(Ctr*(x-1));
+//	}
 
     // fprime = function(x) {1 - (exp(-Cs))*Ctr*exp(Ctr*(x-1))}	  // CC: here we would need q instead of exp(-Cs)
-	private double fprime(double x, double Cs, double Ctr) {
-//    	return 1 - (1-Cs)*Ctr*Math.exp(Ctr*(x-1));
-		return 1 - (FastMath.exp(-Cs))*Ctr*FastMath.exp(Ctr*(x-1));
-    }
+//	private double fprime(double x, double Cs, double Ctr) {
+////    	return 1 - (1-Cs)*Ctr*Math.exp(Ctr*(x-1));
+//		return 1 - (FastMath.exp(-Cs))*Ctr*FastMath.exp(Ctr*(x-1));
+//    }
 
-    public double getp0(double Cs, double Ctr, double x0) { // CC: again dependence on Cs not needed, needs q to match fprime above 
-		n=0;
-		double f = f(x0, Cs, Ctr);
-		while(Math.abs(f) > tol && n < maxsteps) {
-			//x0 = x0 - f(x0, Cs, Ctr) / fprime(x0, Cs, Ctr); // Newton's method formula
-			x0 = x0 - f/fprime(x0, Cs, Ctr);
-			f = f(x0, Cs, Ctr);
-			n=n+1;
-		}
-		if(n < maxsteps) {
-			return x0;
-		}
-		throw new RuntimeException("The p0 algorithm did not converge after " + n + " iterations");
-	}
+//    public double getp0(double Cs, double Ctr, double x0) { // CC: again dependence on Cs not needed, needs q to match fprime above 
+//		n=0;
+//		double f = f(x0, Cs, Ctr);
+//		while(Math.abs(f) > tol && n < maxsteps) {
+//			//x0 = x0 - f(x0, Cs, Ctr) / fprime(x0, Cs, Ctr); // Newton's method formula
+//			x0 = x0 - f/fprime(x0, Cs, Ctr);
+//			f = f(x0, Cs, Ctr);
+//			n=n+1;
+//		}
+//		if(n < maxsteps) {
+//			return x0;
+//		}
+//		throw new RuntimeException("The p0 algorithm did not converge after " + n + " iterations");
+//	}
 
     // CC: here we need, instead, logGetIndivCondition to return log(1 - (1 - q Fs(Y))*S_tr(Y)^(1-p0) )
     // where Fs(Y) = pgamma(Y, As, Bs) (the gamma CDF for the sampling) 
-	public double logGetIndivCondition(double p0, double t, double d) {
-		
-		return Math.log(1 - (1-q * pgamma(t- d, As, Bs)) * Math.pow( Math.exp(logS_tr(t, d)), 1-p0));
-		
-//		final double TT = 1 - FastMath.exp(logS_tr(t, d)*(1-p0) + logS_s(t, d));
-//		if (TT == 0) {
-//			// something is wrong -- make sure the likelihood becomes NEGATIVE_INFINITY by returning POSITIVE_INFINITY
-//			return Double.POSITIVE_INFINITY;
+//	public double logGetIndivCondition(double p0, double t, double d) {
+//		
+//		return Math.log(1 - (1-q * pgamma(t- d, As, Bs)) * Math.pow( Math.exp(logS_tr(t, d)), 1-p0));
+//		
+////		final double TT = 1 - FastMath.exp(logS_tr(t, d)*(1-p0) + logS_s(t, d));
+////		if (TT == 0) {
+////			// something is wrong -- make sure the likelihood becomes NEGATIVE_INFINITY by returning POSITIVE_INFINITY
+////			return Double.POSITIVE_INFINITY;
+////		}
+////		final double logIndivCond = FastMath.log(TT);
+//////	    System.err.println("logGetIndivCondition(" +p0+"," + (t - d)+") = " + logIndivCond);
+////		return logIndivCond;
+//	}
+
+
+//	// recall p0 can be obtained with getp0(Cs,Ctr) 
+//    // CC: here without Cs we need  1-q instead of exp(-Cs) and we can use lambda = Ctr 
+//    private double getPhi(double Cs,double lambda,double p0) { 
+//		if (p0 == 0 ) { 
+//			return Double.NaN; 
+//		} else {        
+//			// return( (1-p0)*(1 - lambda*p0 / (FastMath.exp(-Cs))));
+//			return( (1-p0)*(1 - lambda*p0 / (1-q)));
 //		}
-//		final double logIndivCond = FastMath.log(TT);
-////	    System.err.println("logGetIndivCondition(" +p0+"," + (t - d)+") = " + logIndivCond);
-//		return logIndivCond;
-	}
-
-
-	// recall p0 can be obtained with getp0(Cs,Ctr) 
-    // CC: here without Cs we need  1-q instead of exp(-Cs) and we can use lambda = Ctr 
-    private double getPhi(double Cs,double lambda,double p0) { 
-		if (p0 == 0 ) { 
-			return Double.NaN; 
-		} else {        
-			// return( (1-p0)*(1 - lambda*p0 / (FastMath.exp(-Cs))));
-			return( (1-p0)*(1 - lambda*p0 / (1-q)));
-		}
-		//return(1 - p0*(1+ lambda*(1-p0)/(1-Cs)));
-	}
+//		//return(1 - p0*(1+ lambda*(1-p0)/(1-Cs)));
+//	}
     // CC: rho now needs to be 1 - (Str(Y)^phi) (1-q F_s(Y)) -- see equation 7 in notes 
 //    private double getRho(double phi, double start, double end) {
 //    	return 1 - (Math.pow(Str(Y),phi) * (1-q * F_s(Y)));
@@ -1085,39 +1090,47 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 //		//return (1 - FastMath.exp(logS_tr(100, 0)*phi + logS_s(100, 0)));
 //	}
 
-	final static double tol2=1e-7;
-	final static int maxn = 1000000;
-	private double getBlockCondition(double p0, double rho, double atr, double btr, double Yr) {
-		double Z =0;// # init for the sum
-		int n=1;
-		double term = 1; // initialize the term at something > tol
-		while ((term > tol2) & (n < maxn)) {
-			term = FastMath.pow(1.0 - rho, n) * pgamma(Yr, n * atr, btr);
-			Z = Z+term;
-			n=n+1;
-		}
-//	    if (output==TRUE) {
-//	        cat("Approximate sum:", Z, "\n")
-//	        cat("Number of terms used:", n, "\n") 
-//	        } 
-		return Z;
-	}
+//	final static double tol2=1e-7;
+//	final static int maxn = 1000000;
+//	private double getBlockCondition(double p0, double rho, double atr, double btr, double Yr) {
+//		double Z =0;// # init for the sum
+//		int n=1;
+//		double term = 1; // initialize the term at something > tol
+//		while ((term > tol2) & (n < maxn)) {
+//			term = FastMath.pow(1.0 - rho, n) * pgamma(Yr, n * atr, btr);
+//			Z = Z+term;
+//			n=n+1;
+//		}
+////	    if (output==TRUE) {
+////	        cat("Approximate sum:", Z, "\n")
+////	        cat("Number of terms used:", n, "\n") 
+////	        } 
+//		return Z;
+//	}
 
     // CC: let's try this revised version:
     // Could also try 1/2 tblock, and can try (n-1) instead of n (see extra ideas in the L-B-G note)
-    private double getLogBlockLike(double tblock, int n, double Yr) {
- 
-	    double logOneMinusRhoT =
-		samplingHazard.logS(Yr -tblock, 0.0) + 
-	            phi * transmissionHazard.logS(Yr -tblock, 0.0);
-	
-	    double logBlockLike =
-	            (n) * logOneMinusRhoT
-	            + FastMath.log(dgamma(tblock, n * atr, btr))
-	            - FastMath.log(pgamma(Yr, n * atr, btr));
-	
-	    return logBlockLike;
-	}
+//    private double getLogBlockLike(double tblock, int n, double Yr) {
+// 
+//	    double logOneMinusRhoT =
+//		samplingHazard.logS(Yr -tblock, 0.0) + 
+//	            phi * transmissionHazard.logS(Yr -tblock, 0.0);
+//	
+//	    double logBlockLike =
+//	            (n) * logOneMinusRhoT
+//	            + FastMath.log(dgamma(tblock, n * atr, btr))
+//	            - FastMath.log(pgamma(Yr, n * atr, btr));
+//	
+//	    return logBlockLike;
+//	}
+//    private double getLogBlockLike(double tblock, int n, double Yr) {
+//        // double blockLike = FastMath.pow(1-rho,n) * dgamma(tblock, n*atr, 1/btr) / getBlockCondition(p0,rho, atr, 1/btr, Yr);
+//        double blockLike = FastMath.pow(1-rho,n) * dgamma(tblock, n*atr, btr) / pgamma(Yr, n*atr, btr);
+//        //	    double blockLike = (1-FastMath.pow(rho,n)) * dgamma(tblock, n*a, b) / getBlockCondition(p0,rho, a, b, Yr);
+//        double logBlockLike = FastMath.log(blockLike);
+////	    System.err.println("blockLike(" +tblock+"," + n +"," + Yr+") = " + blockLike);
+//        return logBlockLike;
+//    }
     
     // CC: commenting out the previous version: 
     //	private double getLogBlockLike(double tblock, int n, double Yr) {
@@ -1130,26 +1143,26 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 //		return logBlockLike;
 //	}
 
-	// gives the density
-	double dgamma(double x, double alpha, double rate) {
-		if (x < 0) {
-			throw new IllegalArgumentException("x should be non-negative");
-		}
-		return FastMath.pow(x * rate, alpha - 1) * rate * FastMath.exp(-x * rate) / FastMath.exp(Gamma.logGamma(alpha));
-	}
-
-	//  gives the cumulative distribution function
-	double pgamma(double x, double shape, double rate) {
-		if (x <= 0) {
-			return 0;
-		}
-		try {
-			return Gamma.regularizedGammaP(shape, x * rate);
-		} catch (MathException e) {
-			e.printStackTrace();
-			return 0;
-		}
-	}
+//	// gives the density
+//	double dgamma(double x, double alpha, double rate) {
+//		if (x < 0) {
+//			throw new IllegalArgumentException("x should be non-negative");
+//		}
+//		return FastMath.pow(x * rate, alpha - 1) * rate * FastMath.exp(-x * rate) / FastMath.exp(Gamma.logGamma(alpha));
+//	}
+//
+//	//  gives the cumulative distribution function
+//	double pgamma(double x, double shape, double rate) {
+//		if (x <= 0) {
+//			return 0;
+//		}
+//		try {
+//			return Gamma.regularizedGammaP(shape, x * rate);
+//		} catch (MathException e) {
+//			e.printStackTrace();
+//			return 0;
+//		}
+//	}
 
 //	public double calculateSampledHostContribution() {
 //		double d = endTime.getArrayValue();
@@ -1261,7 +1274,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		int n = tree.getLeafNodeCount();
 		Node [] nodes = tree.getNodesAsArray();
 		calcColourAtBase();
-		segments = collectSegments();
+		segments = collectSegmentsBG();
 
 		if (origin != null) {
 			if (origin.getArrayValue() < tree.getRoot().getHeight()) {
