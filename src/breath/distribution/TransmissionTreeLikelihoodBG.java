@@ -160,6 +160,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
         p0 = getp0(Cs, lambda, 0.1);
         phi = getPhi(Cs, lambda, p0);
         rho = getRho(phi, Cs, Ctr);
+        Pone = lambda * (1 - p0) * p0 / (Math.exp(-Cs)); 
 
 		allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
 		conditionOnInfectionTime = conditionOnInfectionTimeInput.get();
