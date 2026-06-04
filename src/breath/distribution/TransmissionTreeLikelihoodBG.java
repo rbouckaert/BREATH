@@ -141,6 +141,10 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		
 		Cs = samplingHazard.constantInput.get().getArrayValue(); // CC: We could set Cs=1 and use q for the sampling fraction
 		q = 1.0 - Math.exp(-Cs);
+        if (samplingConstantInput.get() != null) {
+        	q = samplingConstantInput.get().getArrayValue();
+        	Cs = -Math.log(1-q);
+        }
 		
 		transmissionHazard = transmissionHazardInput.get();
 		Ctr = transmissionHazard.constantInput.get().getArrayValue();

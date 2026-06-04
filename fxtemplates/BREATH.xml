@@ -28,7 +28,7 @@ breath.distribution.GammaHazardFunction.scale
 >
             <![CDATA[
                 
-                <distribution id="transmissionLikelihood.t:$(n)" spec="breath.distribution.TransmissionTreeLikelihood" colourOnly="false">
+                <distribution id="transmissionLikelihood.t:$(n)" spec="breath.distribution.TransmissionTreeLikelihood" colourOnly="false" q="0.75">
                 	<tree idref="Tree.t:$(n)"/>
                 	<blockstart id="blockstart.t:$(n)" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
                 	<blockend   id="blockend.t:$(n)" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>

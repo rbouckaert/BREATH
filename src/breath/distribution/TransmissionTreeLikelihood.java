@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import breath.evolution.LinearGrowth;
 import org.apache.commons.math.MathException;
 import org.apache.commons.math.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
@@ -19,6 +18,7 @@ import beast.base.core.Function;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.core.Log;
+import beast.base.core.Function.Constant;
 import beast.base.evolution.tree.IntervalList;
 import beast.base.evolution.tree.IntervalType;
 import beast.base.evolution.tree.Node;
@@ -45,6 +45,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<RealParameter> endTimeInput = new Input<>("endTime", "time at which the study finished", Validate.REQUIRED);
     //final public Input<RealParameter> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process", Validate.REQUIRED);
 
+    final public Input<Function> samplingConstantInput = new Input<>("q", "sampling probability used to calculate the sampling rate Cs -- "
+    		+ "if not specified Cs is taken from the sampling hazard's constant. "
+    		+ "If specified, the sampling hazard constant is ignored.");
     final public Input<GammaHazardFunction> samplingHazardInput = new Input<>("samplingHazard", "determines the hazard of being sampled", Validate.REQUIRED);
     final public Input<GammaHazardFunction> transmissionHazardInput = new Input<>("transmissionHazard", "determines the hazard of transmitting an infection", Validate.REQUIRED);
 
@@ -85,7 +88,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     protected double atr;
     protected double btr;
     
-    private double Pone; 
+    protected double Pone; 
 
     //private double a, b;
 
