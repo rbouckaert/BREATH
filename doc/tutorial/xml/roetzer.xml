@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="BEAST.base v2.7.7:BREATH v0.0.1" version="2.7">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="BEAST.base v2.7.8:BREATH v0.0.5" version="2.7">
 
     <data
 id="roetzer40"
@@ -97,8 +97,9 @@ name="alignment">
                 <distribution id="transmissionLikelihood.t:roetzer40" spec="breath.distribution.TransmissionTreeLikelihood" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" origin="@transmissionOrigin.t:roetzer40" tree="@Tree.t:roetzer40">
                     <populationModel id="ConstantTransmissionPopulation.t:roetzer40" spec="ConstantPopulation" popSize="@transmissionPopSize.t:roetzer40"/>
                     <parameter id="endTime.t:roetzer40" spec="parameter.RealParameter" name="endTime">-1.0</parameter>
+                    <q id="Function$Constant.0" spec="Function$Constant" value="0.75"/>
                     <samplingHazard id="samplingHazard.t:roetzer40" spec="breath.distribution.GammaHazardFunction">
-                        <shape id="Function$Constant.0" spec="Function$Constant" value="10.0"/>
+                        <shape id="Function$Constant.01" spec="Function$Constant" value="10.0"/>
                         <rate id="Function$Constant.1" spec="Function$Constant" value="6.5"/>
                         <C id="Function$Constant.2" spec="Function$Constant" value="0.75"/>
                     </samplingHazard>
@@ -140,7 +141,7 @@ name="alignment">
                     <Uniform id="Uniform.2" name="distr"/>
                 </prior>
                 <prior id="TransmissionOriginPrior.t:roetzer40" name="distribution" x="@transmissionOrigin.t:roetzer40">
-                    <Uniform id="Uniform.7" lower="0" name="distr" upper="10"/>
+                    <Uniform id="Uniform.7" name="distr" upper="10.0"/>
                 </prior>
                 <prior id="TransmissionPopSizePrior.t:roetzer40" name="distribution" x="@transmissionPopSize.t:roetzer40">
                     <Exponential id="Exponential.1" name="distr">
@@ -209,19 +210,37 @@ name="alignment">
             <operator idref="AVMNOperator.roetzer40"/>
             <operator id="proportionInvariantScalerX.s:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@proportionInvariant.s:roetzer40" scaleFactor="0.5" upper="10.0" weight="0.1"/>
         </operator>
-        <operator id="transmissionLikelihoodBICEPSEpochTop.t:roetzer40" spec="EpochFlexOperator" scaleFactor="0.1" tree="@Tree.t:roetzer40" weight="2.0"/>
-        <operator id="transmissionLikelihoodBICEPSEpochAll.t:roetzer40" spec="EpochFlexOperator" fromOldestTipOnly="false" scaleFactor="0.1" tree="@Tree.t:roetzer40" weight="2.0"/>
-        <operator id="transmissionLikelihoodBICEPSTreeFlex.t:roetzer40" spec="TreeStretchOperator" scaleFactor="0.01" tree="@Tree.t:roetzer40" weight="2.0"/>
-        <operator id="transmissionLikelihoodTreeRootScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" rootOnly="true" scaleFactor="0.1" tree="@Tree.t:roetzer40" upper="10.0" weight="3.0"/>
-        <operator id="transmissionLikelihoodUniformOperator.t:roetzer40" spec="kernel.BactrianNodeOperator" tree="@Tree.t:roetzer40" weight="30.0"/>
-        <operator id="transmissionLikelihoodSubtreeSlide.t:roetzer40" spec="kernel.BactrianSubtreeSlide" tree="@Tree.t:roetzer40" weight="15.0"/>
-        <operator id="transmissionLikelihoodNarrow.t:roetzer40" spec="Exchange" tree="@Tree.t:roetzer40" weight="15.0"/>
-        <operator id="transmissionLikelihoodWide.t:roetzer40" spec="Exchange" isNarrow="false" tree="@Tree.t:roetzer40" weight="3.0"/>
-        <operator id="transmissionLikelihoodWilsonBalding.t:roetzer40" spec="WilsonBalding" tree="@Tree.t:roetzer40" weight="3.0"/>
         <operator id="transmissionInfectionMover.t:roetzer40" spec="breath.operator.InfectionMover" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" likelihood="@transmissionLikelihood.t:roetzer40" weight="50.0"/>
         <operator id="transmissionBlockOperator.t:roetzer40" spec="breath.operator.BlockOperator" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" tree="@Tree.t:roetzer40" weight="50.0"/>
         <operator id="transmissionPopSizeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="5.0"/>
         <operator id="transmissionOriginScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionOrigin.t:roetzer40" scaleFactor="0.001" upper="10.0" weight="0.5"/>
+        <operator id="BREATHEpochTopWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="2.0">
+            <operator id="BREATHEpochTop.t:roetzer40" spec="EpochFlexOperator" scaleFactor="0.1" tree="@Tree.t:roetzer40" weight="2.0"/>
+        </operator>
+        <operator id="BREATHEpochAllWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="2.0">
+            <operator id="BREATHEpochAll.t:roetzer40" spec="EpochFlexOperator" fromOldestTipOnly="false" scaleFactor="0.1" tree="@Tree.t:roetzer40" weight="2.0"/>
+        </operator>
+        <operator id="BREATHTreeFlexWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="2.0">
+            <operator id="BREATHTreeFlex.t:roetzer40" spec="TreeStretchOperator" scaleFactor="0.01" tree="@Tree.t:roetzer40" weight="2.0"/>
+        </operator>
+        <operator id="BREATHTreeRootScalerWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="3.0">
+            <operator id="BREATHTreeRootScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" rootOnly="true" scaleFactor="0.1" tree="@Tree.t:roetzer40" upper="10.0" weight="3.0"/>
+        </operator>
+        <operator id="BREATHUniformWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="30.0">
+            <operator id="BREATHUniformOperator.t:roetzer40" spec="kernel.BactrianNodeOperator" tree="@Tree.t:roetzer40" weight="30.0"/>
+        </operator>
+        <operator id="BREATHSubtreeSlideWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="15.0">
+            <operator id="BREATHSubtreeSlide.t:roetzer40" spec="kernel.BactrianSubtreeSlide" tree="@Tree.t:roetzer40" weight="15.0"/>
+        </operator>
+        <operator id="BREATHNarrowWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="15.0">
+            <operator id="BREATHNarrow.t:roetzer40" spec="Exchange" tree="@Tree.t:roetzer40" weight="15.0"/>
+        </operator>
+        <operator id="BREATHWideWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="3.0">
+            <operator id="BREATHWide.t:roetzer40" spec="Exchange" isNarrow="false" tree="@Tree.t:roetzer40" weight="3.0"/>
+        </operator>
+        <operator id="BREATHWilsonBaldingWrapOperator.t:roetzer40" spec="breath.operator.TreeWrapOperator" blockcount="@blockcount.t:roetzer40" weight="3.0">
+            <operator id="BREATHWilsonBalding.t:roetzer40" spec="WilsonBalding" tree="@Tree.t:roetzer40" weight="3.0"/>
+        </operator>
         <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="2000" model="@posterior" sanitiseHeaders="true" sort="smart">
             <log idref="posterior"/>
             <log idref="likelihood"/>
