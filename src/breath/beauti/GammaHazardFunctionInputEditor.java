@@ -9,6 +9,7 @@ import beast.base.core.BEASTInterface;
 import beast.base.core.Input;
 import beastfx.app.inputeditor.BEASTObjectInputEditor;
 import beastfx.app.inputeditor.BeautiDoc;
+import beastfx.app.inputeditor.ConstantInputEditor;
 import beastfx.app.inputeditor.InputEditor;
 import beastfx.app.util.FXUtils;
 import breath.distribution.GammaHazardFunction;
@@ -289,8 +290,25 @@ System.err.println("Gamma(" + shape +  " " + rate + ")");
             return y;
         }
     }
- 
 
+    public InputEditor createCEditor() {
+    	GammaHazardFunction hazard = ((GammaHazardFunction) m_input.get());
+    	if (hazard.getID().toLowerCase().contains("sampl")) {
+    		return new NoEditor();
+    	}
+
+        final Input<?> input = hazard.constantInput;
+        ConstantInputEditor constantEditor = new ConstantInputEditor(doc);
+        constantEditor.init(input, hazard, -1, ExpandOption.FALSE, true);
+        return constantEditor;    	
+    }
+
+    public class NoEditor extends InputEditor.Base {
+		@Override
+		public Class<?> type() {
+			return null;
+		}
+    }
     @Override
     public void validateInput() {
     	if (graphPanel != null) {
