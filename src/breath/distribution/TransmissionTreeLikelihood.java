@@ -438,7 +438,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         return logP;
     }
 
-    private class SegmentIntervalList implements IntervalList  {
+    class SegmentIntervalList implements IntervalList  {
 
         double birthTime;
         List<Double> times = new ArrayList<>();

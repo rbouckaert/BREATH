@@ -160,7 +160,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 //			lambda = lambdaTrInput.get();
 //			Log.info("user specified lambda = " + lambda + " = Ctr * " + (lambda/Ctr));
 //		}
-		
+
         p0 = getp0(Cs, lambda, 0.1);
         phi = getPhi(Cs, lambda, p0);
         rho = getRho(phi, Cs, Ctr);
@@ -263,7 +263,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 			return logP;
 		}
 
-		segments = collectSegmentsBG();
+		segments = collectSegments();
 
 		if (includeCoalescentInput.get()) {
 			logP += calculateCoalescent();
@@ -293,7 +293,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		int n = tree.getLeafNodeCount();
 		Node [] nodes = tree.getNodesAsArray();
 		if (segments == null) {
-			segments = collectSegmentsBG();
+			segments = collectSegments();
 		}
 
 		if (origin != null) {
@@ -438,536 +438,536 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 	
 	/** Bits to calculate coalescent contribution **/
 	
-	private List<SegmentIntervalList> segments;
-
-	public double calculateCoalescent() {
-		double logP = 0;
-		for (SegmentIntervalList intervals : segments) {
-			if (intervals != null) {
-				if (conditionOnInfectionTime) {
-					logP += calculateCoalescent(intervals, 0.0);
-				} else {
-					logP += calculateCoalescentUnconditioned(intervals, 0.0);
-				}
-			}
-		}
-		return logP;
-	}
-
-	public List<Double> calculateCoalescents() {
-		segments = collectSegmentsBG();
-		List<Double> logP = new ArrayList<>();
-		for (SegmentIntervalList intervals : segments) {
-			if (intervals != null) {
-				if (conditionOnInfectionTime) {
-					logP.add(calculateCoalescent(intervals, 0.0));
-				} else {
-					logP.add(calculateCoalescentUnconditioned(intervals, 0.0));
-				}
-			}
-		}
-		return logP;
-	}
-
-	private class SegmentIntervalList implements IntervalList  {
-
-		double birthTime;
-		private List<Double> times = new ArrayList<>();
-		private List<IntervalType> events = new ArrayList<>();
-
-		private int intervalCount = 0;
-		/**
-		 * The widths of the intervals.
-		 */
-		private double[] intervals;
-		/**
-		 * The number of uncoalesced lineages within a particular interval.
-		 */
-		private int[] lineageCounts;
-
-
-        protected double getTime(int i) {
-        	return times.get(i);
-        }
-        
-        protected IntervalType getEvent(int i) {
-        	return events.get(i);
-        }
-        
-        protected int getEventCount() {
-        	return events.size();
-//        	if (events.get(i) == IntervalType.SAMPLE) {
-//        		if (i == 0) {
-//        			return lineageCounts[0];
-//        		}
-//        		return lineageCounts[i] - lineageCounts[i-1];
-//        	}
-//        	return 0;
-        }
-
-		@Override
-		public int getIntervalCount() {
-			return intervalCount;
-		}
-
-		@Override
-		public int getSampleCount() {
-			throw new RuntimeException("Not implemented yet");
-		}
-
-		@Override
-		public double getInterval(int i) {
-			if (i < 0 || i >= intervalCount) throw new IllegalArgumentException();
-			return intervals[i];
-		}
-
-		@Override
-		public int getLineageCount(int i) {
-			if (i >= intervalCount) throw new IllegalArgumentException();
-			return lineageCounts[i];
-		}
-
-		@Override
-		public int getCoalescentEvents(int i) {
-			if (i >= intervalCount) throw new IllegalArgumentException();
-			if (i < intervalCount - 1) {
-				return lineageCounts[i] - lineageCounts[i + 1];
-			} else {
-				return lineageCounts[i] - 1;
-			}
-		}
-
-		@Override
-		public IntervalType getIntervalType(int i) {
-			if (i >= intervalCount) throw new IllegalArgumentException();
-			int numEvents = getCoalescentEvents(i);
-
-			if (numEvents > 0) return IntervalType.COALESCENT;
-			else if (numEvents < 0) return IntervalType.SAMPLE;
-			else return IntervalType.NOTHING;
-		}
-
-		@Override
-		public double getTotalDuration() {
-			return times.get(times.size() - 1) - times.get(0);
-		}
-
-		@Override
-		public boolean isBinaryCoalescent() {
-			throw new RuntimeException("Not implemented yet");
-		}
-
-		@Override
-		public boolean isCoalescentOnly() {
-			throw new RuntimeException("Not implemented yet");
-		}
-
-
-		public void calculateIntervals() {
-			double multifurcationLimit = 0.0;
-			int nodeCount = events.size();
-
-			if (intervals == null || intervals.length != nodeCount) {
-				intervals = new double[nodeCount];
-				lineageCounts = new int[nodeCount];
-			}
-
-			// start is the time of the first tip
-			double start = times.get(0);
-			int numLines = 0;
-			int nodeNo = 0;
-			intervalCount = 0;
-			while (nodeNo < nodeCount) {
-
-				int lineagesRemoved = 0;
-				int lineagesAdded = 0;
-
-				double finish = times.get(nodeNo);
-				double next;
-
-				do {
-					final int childIndex = nodeNo;
-					final IntervalType type = events.get(childIndex);
-					// don't use nodeNo from here on in do loop
-					nodeNo += 1;
-					if (type == IntervalType.SAMPLE) {
-						lineagesAdded++;
-					} else {
-						lineagesRemoved++;
-
-						// no mix of removed lineages when 0 th
-						if (multifurcationLimit == 0.0) {
-							break;
-						}
-					}
-
-					if (nodeNo < nodeCount) {
-						next = times.get(nodeNo);
-					} else break;
-				} while (Math.abs(next - finish) <= multifurcationLimit);
-
-				if (lineagesAdded > 0) {
-
-					if (intervalCount > 0 || ((finish - start) > multifurcationLimit)) {
-						intervals[intervalCount] = finish - start;
-						lineageCounts[intervalCount] = numLines;
-						intervalCount += 1;
-					}
-					start = finish;
-				}
-
-				// add sample event
-				numLines += lineagesAdded;
-
-				if (lineagesRemoved > 0) {
-
-					intervals[intervalCount] = finish - start;
-					lineageCounts[intervalCount] = numLines;
-					intervalCount += 1;
-					start = finish;
-				}
-				// coalescent event
-				numLines -= lineagesRemoved;
-			}
-		}
-
-		public void addEvent(double time, IntervalType type) {
-			if (times.size() == 0 || times.get(times.size()-1) < time) {
-				times.add(time);
-				events.add(type);
-			} else {
-				int index = Collections.binarySearch(times, time);
-				if (index < 0) {
-					index = -index - 1;
-				}
-				times.add(index, time);
-				events.add(index, type);
-			}
-		}
-
-		@Override
-		public String toString() {
-			if (times == null) {
-				return "empty SegmentIntervalList";
-			}
-			String str = "";
-			if (lineageCounts == null) {
-				for (int i = 0;i < times.size(); i++) {
-					//str += "(" + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
-					str += "(" + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + ") ";
-				}
-			} else {
-				for (int i = 0;i < times.size(); i++) {
-					//str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
-					str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + ") ";
-				}
-			}
-			return str;
-		}
-
-	}
-
-	private List<SegmentIntervalList> collectSegmentsBG() {
-		List<SegmentIntervalList> segments = new ArrayList<>();
-		int nodeCount = tree.getNodeCount();
-		for (int i = 0; i < nodeCount; i++) {
-			segments.add(null);
-		}
-
-		for (int i =  0; i < nodeCount; i++) {
-			int colour = colourAtBase[i];
-			if (segments.get(colour) == null) {
-				segments.set(colour, new SegmentIntervalList());
-			}
-		}
-
-		for (int i =  0; i < nodeCount; i++) {
-			int colour = colourAtBase[i];
-			Node node = tree.getNode(i);
-			SegmentIntervalList intervals = (SegmentIntervalList) segments.get(colour);
-
-			// add node event
-			intervals.addEvent(node.getHeight(), node.isLeaf() ? IntervalType.SAMPLE : IntervalType.COALESCENT);
-			if (!node.isRoot()) {
-				int parentNr = node.getParent().getNr();
-				int parentColour = colourAtBase[parentNr];
-				if (colour != parentColour) {
-					// add sampling event at top of block
-					intervals = (SegmentIntervalList) segments.get(parentColour);
-					double h = node.getHeight() + blockEndFraction.getValue(node.getNr()) * node.getLength();
-					intervals.addEvent(h, IntervalType.SAMPLE);
-					// set start of colour
-					h = node.getHeight() + blockStartFraction.getValue(node.getNr()) * node.getLength();
-					((SegmentIntervalList) segments.get(colour)).birthTime = h;
-				}
-			} else {
-				((SegmentIntervalList) segments.get(colour)).birthTime = node.getHeight();
-			}
-		}
-
-		// set origin in segment at root
-		int colour = colourAtBase[tree.getNodeCount()-1];
-		((SegmentIntervalList) segments.get(colour)).birthTime =
-				origin != null ? origin.getArrayValue() : tree.getRoot().getHeight();
-
-		for (IntervalList intervals : segments) {
-			if (intervals != null) {
-				((SegmentIntervalList)intervals).calculateIntervals();
-			}
-		}
-
-
-		return segments;
-	}
-
-	/**
-	 * Calculate contribution of coalescent NOT conditioned on infection time being before all coalescent events
-	 * DOES NOT assume constant population size inside a host
-	 */
-	private double calculateCoalescentUnconditioned(SegmentIntervalList intervals, double threshold) {
-		//private double calculateCoalescent(SegmentIntervalList intervals, double threshold) {
-		double logL = 0.0;
-
-		double startTime = 0.0;
-		final int n = intervals.getIntervalCount();
-		for (int i = 0; i < n; i++) {
-
-			final double duration = intervals.getInterval(i);
-			final double finishTime = startTime + duration;
-
-			final double intervalArea = popSizeFunction.getIntegral(startTime, finishTime);
-			if (intervalArea == 0 && duration > 1e-10) {
-				/* the above test used to be duration != 0, but that leads to numerical issues on resume
-				 * (https://github.com/CompEvol/beast2/issues/329) */
-				return Double.NEGATIVE_INFINITY;
-			}
-			final int lineageCount = intervals.getLineageCount(i);
-
-			final double kChoose2 = Binomial.choose2(lineageCount);
-			// common part
-			logL += -kChoose2 * intervalArea;
-
-			if (intervals.getIntervalType(i) == IntervalType.COALESCENT) {
-
-				final double demographicAtCoalPoint = popSizeFunction.getPopSize(finishTime);
-
-				// if value at end is many orders of magnitude different than mean over interval reject the interval
-				// This is protection against cases where ridiculous infinitesimal
-				// population size at the end of a linear interval drive coalescent values to infinity.
-
-				if (duration == 0.0 || demographicAtCoalPoint * (intervalArea / duration) >= threshold) {
-					//                if( duration == 0.0 || demographicAtCoalPoint >= threshold * (duration/intervalArea) ) {
-					logL -= Math.log(demographicAtCoalPoint);
-				} else {
-					// remove this at some stage
-					//  System.err.println("Warning: " + i + " " + demographicAtCoalPoint + " " + (intervalArea/duration) );
-					return Double.NEGATIVE_INFINITY;
-				}
-			}
-			startTime = finishTime;
-		}
-
-		return logL;
-	}
-
-    /**
-     * Calculate contribution of coalescent conditioned on infection time being before all coalescent events
-     * Assumes constant population size inside a host
-     */
-    private double calculateCoalescent(SegmentIntervalList intervals, double threshold) {
-
-        // there is an extra interval here for TMRCA to infection
-        int nEvents = intervals.getEventCount();
-
-        double denominator = 0;
-
-        // The difference between forwards and backwards time is very annoying here. To standardise:
-        // The start of an interval is its start in backwards time, in classic coalescent theory notation
-        // But the denominator algorithm goes in, well, backwards backwards time and those intervals need to be sorted
-        // forwards, based on what type of interval starts them!
-
-        if (nEvents > 1) {
-            // This better constructed in backwards time and then reversed. We need all the intervals between samples;
-            // coalescent events do not count.
-
-            List<Double> interSampleIntervals = new ArrayList<>();
-            List<Integer> lineagesAdded = new ArrayList<>();
-            int i = nEvents;
-
-            // first interval needs to be extended to cover the period between final coalescence and infection
-            double currentTime = intervals.birthTime;
-            while (i > 0) {
-            	i--;
-                // annoyingly you want the type of interval starting (in reverse time) at the current time point, and
-                // to be coherent there must be an "interval" starting at the last time point
-                // this is the type of event that starts the interval
-
-                while (i >= 0 && intervals.getEvent(i) != IntervalType.SAMPLE) {
-                	i--;
-                }
-            	int samplesAdded = 1;
-                while (i > 0 && intervals.getEvent(i) == IntervalType.SAMPLE && intervals.getTime(i) == intervals.getTime(i-1)) {
-                	i--;
-                	samplesAdded++;
-                }
-            	
-                double currentIntervalLength = currentTime - intervals.getTime(i);
-                interSampleIntervals.add(currentIntervalLength);
-                currentTime = intervals.getTime(i);
-
-                lineagesAdded.add(samplesAdded);
-            }
-
-            denominator = calculateDenominator(interSampleIntervals, lineagesAdded);
-        }
-
-        double logL = calculateCoalescentUnconditioned(intervals, threshold) - denominator;
-
-        return logL;
-
-    }
-
-
-
-    private double calculateDenominator(List<Double> interSampleIntervals, List<Integer> lineagesAdded) {
-    	int maxLineageCount = 0;
-    	for (int d : lineagesAdded) {
-    		maxLineageCount += d;
-    	}
-    	
-
-    	// lineageProb[k] = probability of having k lineages left after traversing interval i
-    	double [] lineageLogProb = new double[maxLineageCount + 1];
-    	
-    	// lineprevLineageProbageProb[k] = probability of having k lineages left *before* traversing interval i
-    	double [] prevLineageLogProb = new double[maxLineageCount + 1];
-    	
-    	// start with lineages at youngest tip
-    	int currentMaxLineages = lineagesAdded.get(lineagesAdded.size()-1);
-    	Arrays.fill(prevLineageLogProb, Double.NEGATIVE_INFINITY);
-    	Arrays.fill(lineageLogProb, Double.NEGATIVE_INFINITY);
-    	prevLineageLogProb[currentMaxLineages] = 0;
-    	
-    	// traverse intervals from youngest to oldest (when 1 lineage will be left)
-		for (int i = interSampleIntervals.size()-1;  i >= 0; i--) {
-			double delta = interSampleIntervals.get(i);
-			for (int j = 1; j <= currentMaxLineages; j++) {
-				
-				// calculate the probability of exiting this interval with j lineages 
-				double sum = -Double.MAX_VALUE;
-				for (int k = 1; k <= currentMaxLineages; k++) {
-					if (Double.isFinite(prevLineageLogProb[k])) {
-						double deltaLogP = prevLineageLogProb[k] + calculateLogProbabilityOfLineageDecrementOverInterval(delta, k, j);
-						sum = LogTricks.logSum(sum, deltaLogP);
-					}
-				}
-				if (sum == -Double.MAX_VALUE) {
-					lineageLogProb[j] = Double.NEGATIVE_INFINITY;
-				} else {
-					lineageLogProb[j] = sum;
-				}
-				
-				if (i == 0) {
-					// i = 0 indicates we are at the last interval, 
-					// so no need to calculate lineageLogProb[j] for j > 1
-					// and we can end the loop
-					break;
-				}
-			}
-
-			if (i > 0) {
-				currentMaxLineages += lineagesAdded.get(i-1);
-
-				// update prevLineageProb with values of lineageProb
-				// shifted 1 site because we just sampled a new taxon at the end of the interval
-		    	Arrays.fill(prevLineageLogProb, Double.NEGATIVE_INFINITY);
-				System.arraycopy(lineageLogProb, 0, prevLineageLogProb, lineagesAdded.get(i-1), maxLineageCount-lineagesAdded.get(i-1)+1);
-			}
-		}
-		
-		return lineageLogProb[1];
-	}
-
-
-    /**
-     * The probability that, over the period between startTime and endTime (in backwards time), the number of
-     * lineages drops from lineagesAtStart to lineagesAtEnd; no sampling points are assumed to happen during the
-     * interval
-     *
-     * @param lineagesAtStart
-     * @param lineagesAtEnd
-     * @return
-     */
-
-
-    private double calculateLogProbabilityOfLineageDecrementOverInterval(double deltaT,
-                                                                      int lineagesAtStart, int lineagesAtEnd){
-
-        // remember start and end are in reverse time
-
-        if(lineagesAtEnd < 1){
-            throw new IllegalArgumentException("Illegal lineage counts");
-        }
-        if(lineagesAtStart < 2){
-            return 0;
-        }
-
-        // Just constant size for now
-
-        double popSize = popSizeFunction.getPopSize(0);
-
-        if (lineagesAtEnd == 1) {
-            // Case j = 1: All lineages coalesce to single ancestor
-            double sum = 0.0;
-
-            for (int k = 2; k <= lineagesAtStart; k++) {
-                double exponentialTerm = Math.exp(-k * (k - 1) * deltaT / (2.0 * popSize));
-                double productTerm = calculateProduct(2, lineagesAtStart, k);
-                sum += exponentialTerm * productTerm;
-            }
-
-            return Math.log1p(-sum);
-
-        } else {
-            // Case j > 1: Coalesce to intermediate number
-            double sum = 0.0;
-
-            for (int k = lineagesAtEnd; k <= lineagesAtStart; k++) {
-                double coalescenceRate = k * (k - 1) / 2.0;
-                double exponentialTerm = Math.exp(-k * (k - 1) * deltaT / (2.0 * popSize));
-                double productTerm = calculateProduct(lineagesAtEnd, lineagesAtStart, k);
-                sum += coalescenceRate * exponentialTerm * productTerm;
-            }
-
-            double prefactor = Math.log(2.0) - Math.log(lineagesAtEnd) - Math.log(lineagesAtEnd - 1);
-            return prefactor +Math.log(sum);
-        }
-
-
-    }
-
-    private static double calculateProduct(int end, int start, int excludeK) {
-        double product = 1.0;
-        double kTerm = excludeK * (excludeK - 1);
-
-        for (int l = end; l <= start; l++) {
-            if (l != excludeK) {
-                double lTerm = l * (l - 1);
-                double denominator = lTerm - kTerm;
-
-                // Avoid division by zero
-                if (Math.abs(denominator) < 1e-10) {
-                    return 0.0;
-                }
-
-                product *= lTerm / denominator;
-            }
-        }
-
-        return product;
-    }
-
-
+	//private List<SegmentIntervalList> segments;
+//
+//	public double calculateCoalescent() {
+//		double logP = 0;
+//		for (SegmentIntervalList intervals : segments) {
+//			if (intervals != null) {
+//				if (conditionOnInfectionTime) {
+//					logP += calculateCoalescent(intervals, 0.0);
+//				} else {
+//					logP += calculateCoalescentUnconditioned(intervals, 0.0);
+//				}
+//			}
+//		}
+//		return logP;
+//	}
+//
+//	public List<Double> calculateCoalescents() {
+//		segments = collectSegmentsBG();
+//		List<Double> logP = new ArrayList<>();
+//		for (SegmentIntervalList intervals : segments) {
+//			if (intervals != null) {
+//				if (conditionOnInfectionTime) {
+//					logP.add(calculateCoalescent(intervals, 0.0));
+//				} else {
+//					logP.add(calculateCoalescentUnconditioned(intervals, 0.0));
+//				}
+//			}
+//		}
+//		return logP;
+//	}
+//
+//	private class SegmentIntervalList implements IntervalList  {
+//
+//		double birthTime;
+//		private List<Double> times = new ArrayList<>();
+//		private List<IntervalType> events = new ArrayList<>();
+//
+//		private int intervalCount = 0;
+//		/**
+//		 * The widths of the intervals.
+//		 */
+//		private double[] intervals;
+//		/**
+//		 * The number of uncoalesced lineages within a particular interval.
+//		 */
+//		private int[] lineageCounts;
+//
+//
+//        protected double getTime(int i) {
+//        	return times.get(i);
+//        }
+//        
+//        protected IntervalType getEvent(int i) {
+//        	return events.get(i);
+//        }
+//        
+//        protected int getEventCount() {
+//        	return events.size();
+////        	if (events.get(i) == IntervalType.SAMPLE) {
+////        		if (i == 0) {
+////        			return lineageCounts[0];
+////        		}
+////        		return lineageCounts[i] - lineageCounts[i-1];
+////        	}
+////        	return 0;
+//        }
+//
+//		@Override
+//		public int getIntervalCount() {
+//			return intervalCount;
+//		}
+//
+//		@Override
+//		public int getSampleCount() {
+//			throw new RuntimeException("Not implemented yet");
+//		}
+//
+//		@Override
+//		public double getInterval(int i) {
+//			if (i < 0 || i >= intervalCount) throw new IllegalArgumentException();
+//			return intervals[i];
+//		}
+//
+//		@Override
+//		public int getLineageCount(int i) {
+//			if (i >= intervalCount) throw new IllegalArgumentException();
+//			return lineageCounts[i];
+//		}
+//
+//		@Override
+//		public int getCoalescentEvents(int i) {
+//			if (i >= intervalCount) throw new IllegalArgumentException();
+//			if (i < intervalCount - 1) {
+//				return lineageCounts[i] - lineageCounts[i + 1];
+//			} else {
+//				return lineageCounts[i] - 1;
+//			}
+//		}
+//
+//		@Override
+//		public IntervalType getIntervalType(int i) {
+//			if (i >= intervalCount) throw new IllegalArgumentException();
+//			int numEvents = getCoalescentEvents(i);
+//
+//			if (numEvents > 0) return IntervalType.COALESCENT;
+//			else if (numEvents < 0) return IntervalType.SAMPLE;
+//			else return IntervalType.NOTHING;
+//		}
+//
+//		@Override
+//		public double getTotalDuration() {
+//			return times.get(times.size() - 1) - times.get(0);
+//		}
+//
+//		@Override
+//		public boolean isBinaryCoalescent() {
+//			throw new RuntimeException("Not implemented yet");
+//		}
+//
+//		@Override
+//		public boolean isCoalescentOnly() {
+//			throw new RuntimeException("Not implemented yet");
+//		}
+//
+//
+//		public void calculateIntervals() {
+//			double multifurcationLimit = 0.0;
+//			int nodeCount = events.size();
+//
+//			if (intervals == null || intervals.length != nodeCount) {
+//				intervals = new double[nodeCount];
+//				lineageCounts = new int[nodeCount];
+//			}
+//
+//			// start is the time of the first tip
+//			double start = times.get(0);
+//			int numLines = 0;
+//			int nodeNo = 0;
+//			intervalCount = 0;
+//			while (nodeNo < nodeCount) {
+//
+//				int lineagesRemoved = 0;
+//				int lineagesAdded = 0;
+//
+//				double finish = times.get(nodeNo);
+//				double next;
+//
+//				do {
+//					final int childIndex = nodeNo;
+//					final IntervalType type = events.get(childIndex);
+//					// don't use nodeNo from here on in do loop
+//					nodeNo += 1;
+//					if (type == IntervalType.SAMPLE) {
+//						lineagesAdded++;
+//					} else {
+//						lineagesRemoved++;
+//
+//						// no mix of removed lineages when 0 th
+//						if (multifurcationLimit == 0.0) {
+//							break;
+//						}
+//					}
+//
+//					if (nodeNo < nodeCount) {
+//						next = times.get(nodeNo);
+//					} else break;
+//				} while (Math.abs(next - finish) <= multifurcationLimit);
+//
+//				if (lineagesAdded > 0) {
+//
+//					if (intervalCount > 0 || ((finish - start) > multifurcationLimit)) {
+//						intervals[intervalCount] = finish - start;
+//						lineageCounts[intervalCount] = numLines;
+//						intervalCount += 1;
+//					}
+//					start = finish;
+//				}
+//
+//				// add sample event
+//				numLines += lineagesAdded;
+//
+//				if (lineagesRemoved > 0) {
+//
+//					intervals[intervalCount] = finish - start;
+//					lineageCounts[intervalCount] = numLines;
+//					intervalCount += 1;
+//					start = finish;
+//				}
+//				// coalescent event
+//				numLines -= lineagesRemoved;
+//			}
+//		}
+//
+//		public void addEvent(double time, IntervalType type) {
+//			if (times.size() == 0 || times.get(times.size()-1) < time) {
+//				times.add(time);
+//				events.add(type);
+//			} else {
+//				int index = Collections.binarySearch(times, time);
+//				if (index < 0) {
+//					index = -index - 1;
+//				}
+//				times.add(index, time);
+//				events.add(index, type);
+//			}
+//		}
+//
+//		@Override
+//		public String toString() {
+//			if (times == null) {
+//				return "empty SegmentIntervalList";
+//			}
+//			String str = "";
+//			if (lineageCounts == null) {
+//				for (int i = 0;i < times.size(); i++) {
+//					//str += "(" + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+//					str += "(" + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + ") ";
+//				}
+//			} else {
+//				for (int i = 0;i < times.size(); i++) {
+//					//str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+//					str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + ") ";
+//				}
+//			}
+//			return str;
+//		}
+//
+//	}
+//
+//	private List<SegmentIntervalList> collectSegmentsBG() {
+//		List<SegmentIntervalList> segments = new ArrayList<>();
+//		int nodeCount = tree.getNodeCount();
+//		for (int i = 0; i < nodeCount; i++) {
+//			segments.add(null);
+//		}
+//
+//		for (int i =  0; i < nodeCount; i++) {
+//			int colour = colourAtBase[i];
+//			if (segments.get(colour) == null) {
+//				segments.set(colour, new SegmentIntervalList());
+//			}
+//		}
+//
+//		for (int i =  0; i < nodeCount; i++) {
+//			int colour = colourAtBase[i];
+//			Node node = tree.getNode(i);
+//			SegmentIntervalList intervals = (SegmentIntervalList) segments.get(colour);
+//
+//			// add node event
+//			intervals.addEvent(node.getHeight(), node.isLeaf() ? IntervalType.SAMPLE : IntervalType.COALESCENT);
+//			if (!node.isRoot()) {
+//				int parentNr = node.getParent().getNr();
+//				int parentColour = colourAtBase[parentNr];
+//				if (colour != parentColour) {
+//					// add sampling event at top of block
+//					intervals = (SegmentIntervalList) segments.get(parentColour);
+//					double h = node.getHeight() + blockEndFraction.getValue(node.getNr()) * node.getLength();
+//					intervals.addEvent(h, IntervalType.SAMPLE);
+//					// set start of colour
+//					h = node.getHeight() + blockStartFraction.getValue(node.getNr()) * node.getLength();
+//					((SegmentIntervalList) segments.get(colour)).birthTime = h;
+//				}
+//			} else {
+//				((SegmentIntervalList) segments.get(colour)).birthTime = node.getHeight();
+//			}
+//		}
+//
+//		// set origin in segment at root
+//		int colour = colourAtBase[tree.getNodeCount()-1];
+//		((SegmentIntervalList) segments.get(colour)).birthTime =
+//				origin != null ? origin.getArrayValue() : tree.getRoot().getHeight();
+//
+//		for (IntervalList intervals : segments) {
+//			if (intervals != null) {
+//				((SegmentIntervalList)intervals).calculateIntervals();
+//			}
+//		}
+//
+//
+//		return segments;
+//	}
+//
+//	/**
+//	 * Calculate contribution of coalescent NOT conditioned on infection time being before all coalescent events
+//	 * DOES NOT assume constant population size inside a host
+//	 */
+//	private double calculateCoalescentUnconditioned(SegmentIntervalList intervals, double threshold) {
+//		//private double calculateCoalescent(SegmentIntervalList intervals, double threshold) {
+//		double logL = 0.0;
+//
+//		double startTime = 0.0;
+//		final int n = intervals.getIntervalCount();
+//		for (int i = 0; i < n; i++) {
+//
+//			final double duration = intervals.getInterval(i);
+//			final double finishTime = startTime + duration;
+//
+//			final double intervalArea = popSizeFunction.getIntegral(startTime, finishTime);
+//			if (intervalArea == 0 && duration > 1e-10) {
+//				/* the above test used to be duration != 0, but that leads to numerical issues on resume
+//				 * (https://github.com/CompEvol/beast2/issues/329) */
+//				return Double.NEGATIVE_INFINITY;
+//			}
+//			final int lineageCount = intervals.getLineageCount(i);
+//
+//			final double kChoose2 = Binomial.choose2(lineageCount);
+//			// common part
+//			logL += -kChoose2 * intervalArea;
+//
+//			if (intervals.getIntervalType(i) == IntervalType.COALESCENT) {
+//
+//				final double demographicAtCoalPoint = popSizeFunction.getPopSize(finishTime);
+//
+//				// if value at end is many orders of magnitude different than mean over interval reject the interval
+//				// This is protection against cases where ridiculous infinitesimal
+//				// population size at the end of a linear interval drive coalescent values to infinity.
+//
+//				if (duration == 0.0 || demographicAtCoalPoint * (intervalArea / duration) >= threshold) {
+//					//                if( duration == 0.0 || demographicAtCoalPoint >= threshold * (duration/intervalArea) ) {
+//					logL -= Math.log(demographicAtCoalPoint);
+//				} else {
+//					// remove this at some stage
+//					//  System.err.println("Warning: " + i + " " + demographicAtCoalPoint + " " + (intervalArea/duration) );
+//					return Double.NEGATIVE_INFINITY;
+//				}
+//			}
+//			startTime = finishTime;
+//		}
+//
+//		return logL;
+//	}
+//
+//    /**
+//     * Calculate contribution of coalescent conditioned on infection time being before all coalescent events
+//     * Assumes constant population size inside a host
+//     */
+//    private double calculateCoalescent(SegmentIntervalList intervals, double threshold) {
+//
+//        // there is an extra interval here for TMRCA to infection
+//        int nEvents = intervals.getEventCount();
+//
+//        double denominator = 0;
+//
+//        // The difference between forwards and backwards time is very annoying here. To standardise:
+//        // The start of an interval is its start in backwards time, in classic coalescent theory notation
+//        // But the denominator algorithm goes in, well, backwards backwards time and those intervals need to be sorted
+//        // forwards, based on what type of interval starts them!
+//
+//        if (nEvents > 1) {
+//            // This better constructed in backwards time and then reversed. We need all the intervals between samples;
+//            // coalescent events do not count.
+//
+//            List<Double> interSampleIntervals = new ArrayList<>();
+//            List<Integer> lineagesAdded = new ArrayList<>();
+//            int i = nEvents;
+//
+//            // first interval needs to be extended to cover the period between final coalescence and infection
+//            double currentTime = intervals.birthTime;
+//            while (i > 0) {
+//            	i--;
+//                // annoyingly you want the type of interval starting (in reverse time) at the current time point, and
+//                // to be coherent there must be an "interval" starting at the last time point
+//                // this is the type of event that starts the interval
+//
+//                while (i >= 0 && intervals.getEvent(i) != IntervalType.SAMPLE) {
+//                	i--;
+//                }
+//            	int samplesAdded = 1;
+//                while (i > 0 && intervals.getEvent(i) == IntervalType.SAMPLE && intervals.getTime(i) == intervals.getTime(i-1)) {
+//                	i--;
+//                	samplesAdded++;
+//                }
+//            	
+//                double currentIntervalLength = currentTime - intervals.getTime(i);
+//                interSampleIntervals.add(currentIntervalLength);
+//                currentTime = intervals.getTime(i);
+//
+//                lineagesAdded.add(samplesAdded);
+//            }
+//
+//            denominator = calculateDenominator(interSampleIntervals, lineagesAdded);
+//        }
+//
+//        double logL = calculateCoalescentUnconditioned(intervals, threshold) - denominator;
+//
+//        return logL;
+//
+//    }
+//
+//
+//
+//    private double calculateDenominator(List<Double> interSampleIntervals, List<Integer> lineagesAdded) {
+//    	int maxLineageCount = 0;
+//    	for (int d : lineagesAdded) {
+//    		maxLineageCount += d;
+//    	}
+//    	
+//
+//    	// lineageProb[k] = probability of having k lineages left after traversing interval i
+//    	double [] lineageLogProb = new double[maxLineageCount + 1];
+//    	
+//    	// lineprevLineageProbageProb[k] = probability of having k lineages left *before* traversing interval i
+//    	double [] prevLineageLogProb = new double[maxLineageCount + 1];
+//    	
+//    	// start with lineages at youngest tip
+//    	int currentMaxLineages = lineagesAdded.get(lineagesAdded.size()-1);
+//    	Arrays.fill(prevLineageLogProb, Double.NEGATIVE_INFINITY);
+//    	Arrays.fill(lineageLogProb, Double.NEGATIVE_INFINITY);
+//    	prevLineageLogProb[currentMaxLineages] = 0;
+//    	
+//    	// traverse intervals from youngest to oldest (when 1 lineage will be left)
+//		for (int i = interSampleIntervals.size()-1;  i >= 0; i--) {
+//			double delta = interSampleIntervals.get(i);
+//			for (int j = 1; j <= currentMaxLineages; j++) {
+//				
+//				// calculate the probability of exiting this interval with j lineages 
+//				double sum = -Double.MAX_VALUE;
+//				for (int k = 1; k <= currentMaxLineages; k++) {
+//					if (Double.isFinite(prevLineageLogProb[k])) {
+//						double deltaLogP = prevLineageLogProb[k] + calculateLogProbabilityOfLineageDecrementOverInterval(delta, k, j);
+//						sum = LogTricks.logSum(sum, deltaLogP);
+//					}
+//				}
+//				if (sum == -Double.MAX_VALUE) {
+//					lineageLogProb[j] = Double.NEGATIVE_INFINITY;
+//				} else {
+//					lineageLogProb[j] = sum;
+//				}
+//				
+//				if (i == 0) {
+//					// i = 0 indicates we are at the last interval, 
+//					// so no need to calculate lineageLogProb[j] for j > 1
+//					// and we can end the loop
+//					break;
+//				}
+//			}
+//
+//			if (i > 0) {
+//				currentMaxLineages += lineagesAdded.get(i-1);
+//
+//				// update prevLineageProb with values of lineageProb
+//				// shifted 1 site because we just sampled a new taxon at the end of the interval
+//		    	Arrays.fill(prevLineageLogProb, Double.NEGATIVE_INFINITY);
+//				System.arraycopy(lineageLogProb, 0, prevLineageLogProb, lineagesAdded.get(i-1), maxLineageCount-lineagesAdded.get(i-1)+1);
+//			}
+//		}
+//		
+//		return lineageLogProb[1];
+//	}
+//
+//
+//    /**
+//     * The probability that, over the period between startTime and endTime (in backwards time), the number of
+//     * lineages drops from lineagesAtStart to lineagesAtEnd; no sampling points are assumed to happen during the
+//     * interval
+//     *
+//     * @param lineagesAtStart
+//     * @param lineagesAtEnd
+//     * @return
+//     */
+//
+//
+//    private double calculateLogProbabilityOfLineageDecrementOverInterval(double deltaT,
+//                                                                      int lineagesAtStart, int lineagesAtEnd){
+//
+//        // remember start and end are in reverse time
+//
+//        if(lineagesAtEnd < 1){
+//            throw new IllegalArgumentException("Illegal lineage counts");
+//        }
+//        if(lineagesAtStart < 2){
+//            return 0;
+//        }
+//
+//        // Just constant size for now
+//
+//        double popSize = popSizeFunction.getPopSize(0);
+//
+//        if (lineagesAtEnd == 1) {
+//            // Case j = 1: All lineages coalesce to single ancestor
+//            double sum = 0.0;
+//
+//            for (int k = 2; k <= lineagesAtStart; k++) {
+//                double exponentialTerm = Math.exp(-k * (k - 1) * deltaT / (2.0 * popSize));
+//                double productTerm = calculateProduct(2, lineagesAtStart, k);
+//                sum += exponentialTerm * productTerm;
+//            }
+//
+//            return Math.log1p(-sum);
+//
+//        } else {
+//            // Case j > 1: Coalesce to intermediate number
+//            double sum = 0.0;
+//
+//            for (int k = lineagesAtEnd; k <= lineagesAtStart; k++) {
+//                double coalescenceRate = k * (k - 1) / 2.0;
+//                double exponentialTerm = Math.exp(-k * (k - 1) * deltaT / (2.0 * popSize));
+//                double productTerm = calculateProduct(lineagesAtEnd, lineagesAtStart, k);
+//                sum += coalescenceRate * exponentialTerm * productTerm;
+//            }
+//
+//            double prefactor = Math.log(2.0) - Math.log(lineagesAtEnd) - Math.log(lineagesAtEnd - 1);
+//            return prefactor +Math.log(sum);
+//        }
+//
+//
+//    }
+//
+//    private static double calculateProduct(int end, int start, int excludeK) {
+//        double product = 1.0;
+//        double kTerm = excludeK * (excludeK - 1);
+//
+//        for (int l = end; l <= start; l++) {
+//            if (l != excludeK) {
+//                double lTerm = l * (l - 1);
+//                double denominator = lTerm - kTerm;
+//
+//                // Avoid division by zero
+//                if (Math.abs(denominator) < 1e-10) {
+//                    return 0.0;
+//                }
+//
+//                product *= lTerm / denominator;
+//            }
+//        }
+//
+//        return product;
+//    }
+//
+//
 	public int getColour(int i) {
 		if (updateColours) {
 			calcColourAtBase();
@@ -1011,17 +1011,17 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 
 
 
-	@Override
-	public void restore() {
-		updateColours = true;
-		super.restore();
-	}
-
-	@Override
-	protected boolean requiresRecalculation() {
-		updateColours = true;
-		return true;
-	}
+//	@Override
+//	public void restore() {
+//		updateColours = true;
+//		super.restore();
+//	}
+//
+//	@Override
+//	protected boolean requiresRecalculation() {
+//		updateColours = true;
+//		return true;
+//	}
 
 
 
@@ -1279,7 +1279,7 @@ public class TransmissionTreeLikelihoodBG extends TransmissionTreeLikelihood {
 		int n = tree.getLeafNodeCount();
 		Node [] nodes = tree.getNodesAsArray();
 		calcColourAtBase();
-		segments = collectSegmentsBG();
+		segments = collectSegments();
 
 		if (origin != null) {
 			if (origin.getArrayValue() < tree.getRoot().getHeight()) {
