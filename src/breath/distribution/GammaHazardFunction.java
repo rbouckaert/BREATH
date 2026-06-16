@@ -21,7 +21,7 @@ public class GammaHazardFunction extends HazardFunction {
     final public Input<Function> shapeInput = new Input<>("shape", "shape of gamma hazard function");
     final public Input<Function> rate_trInput = new Input<>("rate", "rate of gamma hazard function", Validate.XOR, scaleInput);
     final public Input<Function> constantInput = new Input<>("C", "constant of tranmission process", new Constant("1.0"));
-    final public Input<Boolean> approxInput = new Input<>("approx", "approximate cummulative gamma distribution (faster, but with error < 0.00011)", false);
+    final public Input<Boolean> approxInput = new Input<>("approx", "approximate cumulative gamma distribution (faster, but with error < 0.00011)", false);
 
     private GammaDistribution samplingDist = new GammaDistributionImpl(1, 1);
     

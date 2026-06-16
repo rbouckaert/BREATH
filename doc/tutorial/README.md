@@ -62,7 +62,7 @@ If `BREATH` is not in the list of packages, you must add a package repository fi
 > * Start BEAUti -- it should open with the Standard template.
 > * Next, select the `File => Import Alignment` menu.
 
-A dialog is shown where you can select a file containing a tree in NEXUS format.
+A dialog is shown where you can select a file containing an alignment in NEXUS format.
 
 > Select the file `roetzer40.nex` that comes with this tutorial in the data section.
 
