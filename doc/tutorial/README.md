@@ -21,9 +21,9 @@ This has a number of benefits over existing methods for inference who-infected-w
 
 There are some limitations that need to be taken in account:
 
-* Good knowledge about the transmission process is required in order to be able to specify the parameters of the transmission hazard -- one of the input for the transmission tree likelihood.
-* Likewise, good knowledge about the sampling process is required: what time does it take between a host getting infected and getting sampled, and what is the probability of being sampled. This information is required to specify the sampling hazard parameters.
-* If the goal of the analysis is to infer who-infected-who from the data, this kind of analysis assumes that the hosts are densely sampled, with at least 50% of the hosts being sampled. If fewer hosts are sampled, little information about the who-infected-who process can be inferred, though the method still can be used as tree prior.
+* Good knowledge about the transmission process is required in order to be able to specify the parameters of the transmission hazard -- one of the inputs for the transmission tree likelihood.
+* Likewise, good knowledge about the sampling process is required: what time does it take between a host getting infected and getting sampled, and what is the probability of being sampled? This information is required to specify the sampling hazard parameters. For both transmission and sampling, it is not necessary to know the times specifically; it is knowledge of the distribution that is required. 
+* If the goal of the analysis is to infer who infected whom from the data, this kind of analysis assumes that the hosts are densely sampled, with at least 30-50% of the hosts in the transmission cluster being sampled. If fewer hosts are sampled, little information about the who-infected-whom process can be inferred, though the method still can be used as tree prior.
 
 ----
 
@@ -48,7 +48,7 @@ Tracer is used to summarise the posterior estimates of the various parameters sa
 # Practical: BREATH Tree Analysis
 
 We will set up an analysis in BEAUti using a BREATH tree prior of a tuberculosis outbreak in Hamburg, Germany, earlier analysed in {% cite roetzer2013whole %}.
-To reduce run-time, we only analyse a subset of 40 samples, then run BEAST and analyse the results. 
+To reduce run time, we only analyse a subset of 40 samples, then run BEAST and analyse the results. 
 We will be using the `BREATH` package, so make sure it is installed, like so:
 
 > * Start BEAUti
@@ -104,14 +104,15 @@ The site model panel should look similar to this:
 	<figcaption>Figure: Set up site model to HKY+4G+I.</figcaption>
 </figure>
 
-We will leave the clock model to a strict clock. Because we use tip dates, the clock rate is estimated by default. 
+We will leave the clock model to a strict clock. Because we use tip dates, the clock rate is estimated by default. Note that while this outbreak lasted years, in densely sampled person-to-person outbreaks, there may not be sufficient time elapsed in the data to estimate the molecular clock. 
+
 Next, we set up the BREATH tree prior.
 
 > * Click the `Priors` panel.
 > * Change the default Yule Model for tree prior to `BREATH`.
 > * New priors appear for the block count, block start, block end, transmission tree origin,
 and transmission tree population size.
-> * Set the start value for origin to 10: click the `Initial` button for the `transmissionOrigin.t:roetzer40` parameter, and change the `value` entry from 10000 to 10, then click the `OK` button.
+> * Set the start value for origin to 10: click the `Initial` button for the `transmissionOrigin.t:roetzer40` parameter, and change the `value` entry from 10000 to 10, then click the `OK` button. The origin start must be larger than the difference in dates (in years) between the first and last samples. A reasonable starting value might be 2-3 times this difference.  
 > * Set the lower bound for population size to 0.1.
 > * Click on the triangle next to `Tree.t:roetzer40` to show the parameter so the `BREATH` tree likelihood.
 > * Go to the population size prior (at the bottom), open the distribution by clicking the triangle next to the prior, and set the lower bound to 0.1 (this prevents the tree collapsing).
@@ -136,7 +137,7 @@ The BREATH tree likelihood has the following components:
 * transmissionHazard: determines the hazard of transmitting an infection. It has an average number of transmissions `C` and a `shape` and `rate` parameter for a Gamma distribution that determine the time from infection to time of infecting another host. In general, the average transmission time should be less than the average sampling time (so shape/rate of transmission should be smaller than shape/rate of the sampling hazard).
 * endTime: time at which the study finished relative to the latest sample. So, if the units of time is years, and the study stopped collecting samples 3 months after the latest sample, it means the endTime is 1/4 year after the latest sample, and endTime=-0.25.
 <!--* deltaStartTime: time at which the study start till root of tree (optional, default: 0). -->
-* origin: time at which the study start above the root of tree. Assumed to be at root if not specified.
+* origin: time at which the study starts, above the root of tree. Assumed to be at root if not specified.
 * allowTransmissionsAfterSampling: flag to indicate sampling does not affect the probability of onwards transmissions. If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though). (optional, default: true)
 * includeCoalescent: flag for debugging that includes contribution from coalescent to posterior if true (default: true).
 
