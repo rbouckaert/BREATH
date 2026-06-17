@@ -133,12 +133,12 @@ and transmission tree population size.
 
 
 The BREATH tree likelihood has the following components:
-* samplingHazard: determines the hazard of being sampled. It has a sampling probability (`C` in the priors tab) and a `shape` and `rate` parameter for a Gamma distribution that determine the time of sampling after a host got infected.
+* samplingHazard: determines the hazard of being sampled. It has a sampling probability (`Q` in the priors tab) and a `shape` and `rate` parameter for a Gamma distribution that determine the time of sampling after a host got infected.
 * transmissionHazard: determines the hazard of transmitting an infection. It has an average number of transmissions `C` and a `shape` and `rate` parameter for a Gamma distribution that determine the time from infection to time of infecting another host. In general, the average transmission time should be less than the average sampling time (so shape/rate of transmission should be smaller than shape/rate of the sampling hazard).
-* endTime: time at which the study finished relative to the latest sample. So, if the units of time is years, and the study stopped collecting samples 3 months after the latest sample, it means the endTime is 1/4 year after the latest sample, and endTime=-0.25.
+* endTime: time at which the study finished relative to the latest sample. So, if the units of time is years, and the study stopped collecting samples 3 months after the latest sample, it means the endTime is 1/4 year after the latest sample, and endTime=-0.25. Note the negative value! 
 <!--* deltaStartTime: time at which the study start till root of tree (optional, default: 0). -->
 * origin: time at which the study starts, above the root of tree. Assumed to be at root if not specified.
-* allowTransmissionsAfterSampling: flag to indicate sampling does not affect the probability of onwards transmissions. If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though). (optional, default: true)
+* allowTransmissionsAfterSampling: flag to indicate sampling does not affect the probability of onward transmission. If false, no onwards transmissions are allowed after sampling (not clear how this affects the unknown unknowns though). (optional, default: true)
 * includeCoalescent: flag for debugging that includes contribution from coalescent to posterior if true (default: true).
 
 The two hazard functions probably need a bit of thought and knowledge to inform their parameters. For more details, we refer to the paper.
@@ -148,9 +148,9 @@ The two hazard functions probably need a bit of thought and knowledge to inform 
 
 In general, you need to have good information about the sampling process and transmission process in order for BREATH to be useful.
 
-In particular, you need to have some idea about what proportion of the hosts is sampled (sample constant), how long after infection hosts are sampled on average (to set `sampleShape/sampleRate`) and the variance (to set `sampleShape/(sampleRate * sampleRate)`). For the transmission process, transmission constant is the number of hosts that on average are infected by a host, and the fraction `transmissionShape/transmissionRate` sets the mean time between a host getting infected and infecting other hosts and `transmissionShape/(transmissionRate * transmissionRate)` the variance.
+In particular, you need to have some idea about what proportion of the hosts is sampled (sample constant), how long after infection hosts are sampled on average (to set `sampleShape/sampleRate`) and the variance (to set `sampleShape/(sampleRate * sampleRate)`). For the transmission process, the transmission constant is the number of hosts that on average are infected by a host (disregarding the effect of samping and the stopping time). The fraction `transmissionShape/transmissionRate` sets the mean time between a host getting infected and infecting other hosts and `transmissionShape/(transmissionRate * transmissionRate)` the variance.
 
-Not all combinations of parameters lead to sensible trees. It is quite possible that only single taxon trees are generated. Even when choosing sensible parameter combinations, one of the modes of the taxon count distribution will be near 1.
+Not all combinations of parameters lead to sensible trees. It is quite possible that under your assumed parameters (if you were to simulate trees), only single taxon trees are likely to be generated. Even when choosing sensible parameter combinations, one of the modes of the taxon count distribution will be near 1. 
 
 * Choose `transmissionConstant` in [1, 4]. This sets the mean number of transmission events per host and determines the scale of the tree.
 * Choose `sampleConstant` in (0.5, 1), to sample enough cases that person-to-person transmission inference is likely to be a reasonable task.
@@ -233,7 +233,7 @@ Inspect the tree file, for example in DensiTree. It shows that there is a lot of
 	<figcaption>Figure: Inspect the tree distribution in DensiTree.</figcaption>
 </figure>
 
-## Visualising Who-Infected-Who
+## Visualising Who Infected Whom 
 
 The `WIWVisualiser` app creates an SVG file that visualises who-infected-who. 
 To start the `WIWVisualiser` app, 
