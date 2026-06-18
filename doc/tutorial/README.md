@@ -2,7 +2,7 @@
 author: Remco Bouckaert
 level: Intermediate
 title: BREATH transmission tree tutorial
-subtitle: Inferring who-infected-who
+subtitle: Inferring who infected whom
 beastversion: 2.7.6
 ---
 
