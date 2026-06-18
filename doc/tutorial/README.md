@@ -321,7 +321,7 @@ If no host(s) are infected, -1 is output -- this shows up when you open the file
 Checking the time-till-first-transmission and time-till-second-transmission can be useful in verifying the transmission hazard is properly parameterised.
 
 
-### Simulation 
+# Simulation 
 
 BREATH has a simulator, which is available as the TransmissionTreeSimulator app. To use the command line version of the simulator, use the ‘applauncher’ application (which is part of the BEAST 2 distribution) from a terminal/command prompt.
 Alternatively, start BEAUti (which is also part of the BEAST 2 distribution), select the ‘File/Launch apps’ menu, and select ‘TransmissionTreeSimulator’ from the list of applications. Click the ‘launch‘ button to start a GUI version of the simulator. Options include the sampling and transmission parameters, the end time, the within-host population size, and options for file names, tree count, number of taxa and a few others. 
