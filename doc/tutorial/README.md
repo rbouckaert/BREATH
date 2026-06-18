@@ -144,25 +144,19 @@ The BREATH tree likelihood has the following components:
 The two hazard functions probably need a bit of thought and knowledge to inform their parameters. For more details, we refer to the paper.
 
 
-### Some considerations for setting up these parameters
+### Setting parameters for inference
 
 In general, you need to have good information about the sampling process and transmission process in order for BREATH to be useful.
 
-In particular, you need to have some idea about what proportion of the hosts is sampled (sample constant), how long after infection hosts are sampled on average (to set `sampleShape/sampleRate`) and the variance (to set `sampleShape/(sampleRate * sampleRate)`). For the transmission process, the transmission constant is the number of hosts that on average are infected by a host (disregarding the effect of samping and the stopping time). The fraction `transmissionShape/transmissionRate` sets the mean time between a host getting infected and infecting other hosts and `transmissionShape/(transmissionRate * transmissionRate)` the variance.
+In particular, you need to have some idea about what proportion of the hosts is sampled (the sample constant), how long after infection hosts are sampled on average (to set `sampleShape/sampleRate`) and the variance (to set `sampleShape/(sampleRate * sampleRate)`). For the transmission process, the transmission constant is the number of hosts that on average are infected by a host (disregarding the effect of samping and the stopping time). The fraction `transmissionShape/transmissionRate` sets the mean time between a host getting infected and infecting other hosts and `transmissionShape/(transmissionRate * transmissionRate)` the variance.
 
-Not all combinations of parameters lead to sensible trees. It is quite possible that under your assumed parameters (if you were to simulate trees), only single taxon trees are likely to be generated. Even when choosing sensible parameter combinations, one of the modes of the taxon count distribution will be near 1. 
-
-* Choose `transmissionConstant` in [1, 4]. This sets the mean number of transmission events per host and determines the scale of the tree.
-* Choose `sampleConstant` in (0.5, 1), to sample enough cases that person-to-person transmission inference is likely to be a reasonable task.
+* Choose `transmissionConstant` according to your knowledge of the effective reproduction number that is plausible for your outbreak. Typically this is in [1, 4]. This sets the mean number of transmission events per host. 
+* A `sampleConstant` in (0.3, 1) will hopefully be a reasonable representation of the fraction of infectors in the transmission cluster or location who are represented in the data. If far fewer than that are in the data, BREATH may not be an appropriate model. 
 * Choose `transmissionShape/transmissionRate` to set the mean inter-infection time (ignoring sampling) .
 * Choose `sampleShape/sampleRate > transmissionShape/transmissionRate` so that sampling occurs at after the mean generation time, on average. Otherwise it seems likely that the transmission chains will die out quickly.
-* Choose `endTime` the approximate number of transmission generations. Keep in mind that if the mean time to sampling is considerably greater than the mean time to infection, and `transmissionConstant` is high, the number of infections could grow very large.
+* Choose `endTime` as the approximate time period after the last tip that sampling was possible. This parameter is *negative*. 
 * Choose `popSize` in such a way that the probability that lineages will coalesce in the required time is pretty high, for example `popSize < -transmissionRate/transmissionShape log(0.95)`.
-* After choosing the hazard function parameters, a quick sanity check is to plot the gamma distribution densities of the sampling and transmission hazard in the same plot. This plot shows how likely it is for a transmission to happen at a given time and how likely it is for a host to be sampled. For an exponentially growing process, the mean of the sampling hazard should be larger than that of the transmission hazard.
-
-Reducing `transmissionConstant` will make a big (nonlinear) difference.
-
-Changing `samplingConstant` will not make much difference to transmission or the size of the process (though it will to the number of sampled cases, in a linear way), because if sampling happens, it’s most likely to happen after the peak in transmission anyway.
+* After choosing the hazard function parameters, a quick sanity check is to plot the gamma distribution densities of the sampling and transmission hazard in the same plot. This plot shows how likely it is for a transmission to happen at a given time and how likely it is for a host to be sampled. The mean of the sampling hazard should typically be larger than that of the transmission hazard (otherwise, especially if sampling stops transmission, the model parameters would not predict a large enough outbreak to have generated interest in sequencing or transmission analysis). 
 
 ### Hyperpriors
 
@@ -326,6 +320,26 @@ It also records the time till infects a second host.
 If no host(s) are infected, -1 is output -- this shows up when you open the file in Tracer as a peak around -1.
 Checking the time-till-first-transmission and time-till-second-transmission can be useful in verifying the transmission hazard is properly parameterised.
 
+
+### Simulation 
+
+BREATH has a simulator, which is available as the TransmissionTreeSimulator app. To use the command line version of the simulator, use the ‘applauncher’ application (which is part of the BEAST 2 distribution) from a terminal/command prompt.
+Alternatively, start BEAUti (which is also part of the BEAST 2 distribution), select the ‘File/Launch apps’ menu, and select ‘TransmissionTreeSimulator’ from the list of applications. Click the ‘launch‘ button to start a GUI version of the simulator. Options include the sampling and transmission parameters, the end time, the within-host population size, and options for file names, tree count, number of taxa and a few others. 
+
+To set the parameters for simulation, here are some considerations. 
+
+* Choose `transmissionConstant` as the effective reproduction number. Typically this is in [1, 4].
+* Choose `sampleConstant` in (0.5, 1), to sample enough cases that person-to-person transmission inference is likely to be a reasonable task.
+* As for inference, choose `transmissionShape/transmissionRate` to set the mean inter-infection time (ignoring sampling) .
+* Choose `sampleShape/sampleRate > transmissionShape/transmissionRate` so that sampling occurs at after the mean generation time, on average. Otherwise it seems likely that the transmission chains will die out quickly (especially if sampling stops onward transmission).
+* Choose `endTime`: the stopping time for the simulator (in thie simulator, this is positive). Keep in mind that if the mean time to sampling is considerably greater than the mean time to infection, and `transmissionConstant` is high, the number of infections could grow very large.
+* Follow the guidelines for inference to set the other parameters. 
+
+Not all combinations of parameters lead to sensible trees. It is quite possible that under your assumed parameters (if you were to simulate trees), only single taxon trees are likely to be generated. Even when choosing sensible parameter combinations, one of the modes of the taxon count distribution will be near 1. 
+
+Changing the `transmissionConstant` will make a big (nonlinear) difference to the size of the simulated trees.
+
+Changing `samplingConstant` will not make much difference to transmission or the size of the process (though it will to the number of sampled cases, in a linear way), because if sampling happens, it’s most likely to happen after the peak in transmission anyway.
 
 
 ----
