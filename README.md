@@ -12,7 +12,7 @@ See the [tutorial](https://github.com/rbouckaert/transmission/blob/main/doc/tuto
 
 Install [BEAST 2](http://beast2.org).
 
-Download [BREATH.v0.0.1.zip](https://github.com/rbouckaert/transmission/releases/download/v0.0.1/BREATH.v0.0.1.zip). 
+Download [BREATH.v0.0.7.zip](https://github.com/rbouckaert/transmission/releases/download/v0.0.7/BREATH.v0.0.7.zip). 
 Then, create a BREATH subdirectory:
 
 ```
@@ -22,7 +22,7 @@ for Linux /home/<YourName>/.beast/2.7/BREATH
 ```
 
 Here `<YourName>` is the username you use.
-Unzip the file [BREATH.v0.0.1.zip](https://github.com/rbouckaert/transmission/releases/download/v0.0.1/BREATH.v0.0.1.zip) in the newly created directory.
+Unzip the file [BREATH.v0.0.7.zip](https://github.com/rbouckaert/transmission/releases/download/v0.0.7/BREATH.v0.0.7.zip) in the newly created directory.
 
 
 ## Build from code
