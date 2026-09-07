@@ -153,7 +153,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
         p0 = getp0(Cs, lambda, 0.1);
         phi = getPhi(Cs, lambda, p0);
-        rho = getRho(phi, Cs, Ctr);
+        // rho = getRho(phi, Cs, Ctr); // CC changing this to try reviewer's rho instead of ours
+
+        rho = getRhoBernoulli(Ctr, p0); // CC: note change here to the new rho 
         //Pone = lambda * (1 - p0) * p0 / (1 - Math.exp(-Cs));
         Pone = lambda * (1 - p0) * p0 / (Math.exp(-Cs)); 
         
@@ -1219,6 +1221,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     protected static double getRho(double phi, double Cs, double Ctr) {
     	return (1 - FastMath.exp(-(phi*Ctr+Cs)));
         // return (1 - FastMath.exp(logS_tr(100, 0)*phi + logS_s(100, 0)));
+    }
+    protected static double getRhoBernoulli(double Ctr, double p0) {
+        return 1 - Ctr * p0;
     }
 
     final static double tol2=1e-7;
