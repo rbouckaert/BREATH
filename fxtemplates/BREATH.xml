@@ -23,6 +23,7 @@ breath.distribution.TransmissionTreeLikelihood.blockstart,
 breath.distribution.TransmissionTreeLikelihood.blockend,
 breath.distribution.TransmissionTreeLikelihood.blockcount,
 breath.distribution.TransmissionTreeLikelihood.populationModel,
+breath.distribution.TransmissionTreeLikelihood.noRightTruncation,
 breath.distribution.GammaHazardFunction.scale
 "
 >

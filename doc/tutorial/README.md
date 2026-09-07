@@ -140,7 +140,7 @@ The BREATH tree likelihood has the following components:
 * origin: time at which the study starts, above the root of tree. Assumed to be at root if not specified.
 * allowTransmissionsAfterSampling: flag to indicate sampling does not affect the probability of onward transmission. If false, no onwards transmissions are allowed after sampling (not clear how this affects the unknown unknowns though). (optional, default: true)
 * includeCoalescent: flag for debugging that includes contribution from coalescent to posterior if true (default: true).
-
+* noRightTruncation: flag to indicate right truncation should be used (default: false). To use rightTruncation, edit the XML and add attribute `noRightTruncation="false"` to the element with spec containing `TransmissionTreeLikelihood`.
 The two hazard functions probably need a bit of thought and knowledge to inform their parameters. For more details, we refer to the paper.
 
 
@@ -157,6 +157,7 @@ In particular, you need to have some idea about what proportion of the hosts is 
 * Choose `endTime` as the approximate time period after the last tip that sampling was possible. This parameter is *negative*. 
 * Choose `popSize` in such a way that the probability that lineages will coalesce in the required time is pretty high, for example `popSize < -transmissionRate/transmissionShape log(0.95)`.
 * After choosing the hazard function parameters, a quick sanity check is to plot the gamma distribution densities of the sampling and transmission hazard in the same plot. This plot shows how likely it is for a transmission to happen at a given time and how likely it is for a host to be sampled. The mean of the sampling hazard should typically be larger than that of the transmission hazard (otherwise, especially if sampling stops transmission, the model parameters would not predict a large enough outbreak to have generated interest in sequencing or transmission analysis). 
+
 
 ### Hyperpriors
 
